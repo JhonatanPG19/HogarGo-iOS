@@ -22,7 +22,7 @@ struct RootView: View {
                     case .tasks:
                         TasksView()
                     case .finance:
-                        tabPlaceholder(title: "Finanzas", icon: "banknote.fill")
+                        FinanceView()
                     case .pet:
                         tabPlaceholder(title: "Mascota", icon: "pawprint.fill")
                     case .calendar:

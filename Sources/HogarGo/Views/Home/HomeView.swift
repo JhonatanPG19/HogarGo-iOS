@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var isTaskCompleted: Bool = false
     @State private var streakDays: Int = 3
     @State private var showNewTaskSheet: Bool = false
+    @State private var showNewExpenseSheet: Bool = false
     var onNewTaskTap: () -> Void = {}
     var onAddExpenseTap: () -> Void = {}
     var onEventTap: () -> Void = {}
