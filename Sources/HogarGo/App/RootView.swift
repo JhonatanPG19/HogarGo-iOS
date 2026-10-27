@@ -16,7 +16,9 @@ struct RootView: View {
                 ZStack {
                     switch selectedTab {
                     case .home:
-                        tabPlaceholder(title: "Inicio", icon: "house.fill")
+                        HomeView(
+                            onNewTaskTap: { selectedTab = .tasks }
+                        )
                     case .tasks:
                         tabPlaceholder(title: "Tareas", icon: "checklist")
                     case .finance:
