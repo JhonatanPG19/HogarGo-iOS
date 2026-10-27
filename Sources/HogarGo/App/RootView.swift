@@ -26,7 +26,7 @@ struct RootView: View {
                     case .pet:
                         tabPlaceholder(title: "Mascota", icon: "pawprint.fill")
                     case .calendar:
-                        tabPlaceholder(title: "Calendario", icon: "calendar")
+                        CalendarView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
