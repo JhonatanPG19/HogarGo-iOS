@@ -20,7 +20,7 @@ struct RootView: View {
                             onNewTaskTap: { selectedTab = .tasks }
                         )
                     case .tasks:
-                        tabPlaceholder(title: "Tareas", icon: "checklist")
+                        TasksView()
                     case .finance:
                         tabPlaceholder(title: "Finanzas", icon: "banknote.fill")
                     case .pet:
