@@ -31,6 +31,7 @@ struct TasksView: View {
         )
     ]
 
+    @State private var showNewTaskSheet: Bool = false
     var onProposeNewTask: () -> Void = {}
 
     var body: some View {
@@ -58,7 +59,10 @@ struct TasksView: View {
                 }
 
                 // 4. Botón punteado "Proponer Nueva Misión"
-                Button(action: onProposeNewTask) {
+                Button {
+                    showNewTaskSheet = true
+                    onProposeNewTask()
+                } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "plus")
                             .font(.system(size: 14, weight: .bold))
@@ -87,6 +91,9 @@ struct TasksView: View {
             .padding(.top, 12)
         }
         .background(HogarGoColors.background)
+        .sheet(isPresented: $showNewTaskSheet) {
+            NewTaskView()
+        }
     }
 }
 

@@ -4,6 +4,7 @@ struct HomeView: View {
     // Estados visuales de demostración
     @State private var isTaskCompleted: Bool = false
     @State private var streakDays: Int = 3
+    @State private var showNewTaskSheet: Bool = false
     var onNewTaskTap: () -> Void = {}
     var onAddExpenseTap: () -> Void = {}
     var onEventTap: () -> Void = {}
@@ -64,7 +65,10 @@ struct HomeView: View {
 
                 // 5. Cuadrícula 2x2: Accesos rápidos
                 QuickActionsGrid(
-                    onNewTask: onNewTaskTap,
+                    onNewTask: {
+                        showNewTaskSheet = true
+                        onNewTaskTap()
+                    },
                     onAddExpense: onAddExpenseTap,
                     onEvent: onEventTap,
                     onMore: onMoreTap
@@ -76,6 +80,9 @@ struct HomeView: View {
             .padding(.top, 12)
         }
         .background(HogarGoColors.background)
+        .sheet(isPresented: $showNewTaskSheet) {
+            NewTaskView()
+        }
     }
 }
 
