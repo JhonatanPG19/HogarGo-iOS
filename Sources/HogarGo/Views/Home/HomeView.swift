@@ -6,6 +6,11 @@ struct HomeView: View {
     @State private var streakDays: Int = 3
     @State private var showNewTaskSheet: Bool = false
     @State private var showNewExpenseSheet: Bool = false
+    @State private var showNewEventSheet: Bool = false
+    @State private var showMoreSheet: Bool = false
+    @State private var showAboutSheet: Bool = false
+    @State private var showMembersDialog: Bool = false
+
     var onNewTaskTap: () -> Void = {}
     var onAddExpenseTap: () -> Void = {}
     var onEventTap: () -> Void = {}
@@ -64,15 +69,24 @@ struct HomeView: View {
                 // 4. Tarjeta: Meta de Ahorro
                 SavingsGoalCard()
 
-                // 5. Cuadrícula 2x2: Accesos rápidos
+                // 5. Cuadrícula 2x2: Accesos rápidos (New Task, Add Expense, Event, More)
                 QuickActionsGrid(
                     onNewTask: {
                         showNewTaskSheet = true
                         onNewTaskTap()
                     },
-                    onAddExpense: onAddExpenseTap,
-                    onEvent: onEventTap,
-                    onMore: onMoreTap
+                    onAddExpense: {
+                        showNewExpenseSheet = true
+                        onAddExpenseTap()
+                    },
+                    onEvent: {
+                        showNewEventSheet = true
+                        onEventTap()
+                    },
+                    onMore: {
+                        showMoreSheet = true
+                        onMoreTap()
+                    }
                 )
 
                 Spacer(minLength: 24)
@@ -83,6 +97,37 @@ struct HomeView: View {
         .background(HogarGoColors.background)
         .sheet(isPresented: $showNewTaskSheet) {
             NewTaskView()
+        }
+        .sheet(isPresented: $showNewExpenseSheet) {
+            QuickAddExpenseSheet()
+        }
+        .sheet(isPresented: $showNewEventSheet) {
+            QuickAddEventSheet()
+        }
+        .sheet(isPresented: $showMoreSheet) {
+            MoreBottomSheet(
+                onOpenAbout: {
+                    showMoreSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showAboutSheet = true
+                    }
+                },
+                onOpenMembers: {
+                    showMoreSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showMembersDialog = true
+                    }
+                }
+            )
+            .presentationDetents([.fraction(0.38), .medium])
+        }
+        .sheet(isPresented: $showAboutSheet) {
+            AboutView()
+        }
+        .alert("Integrantes del Hogar", isPresented: $showMembersDialog) {
+            Button("Cerrar", role: .cancel) {}
+        } message: {
+            Text("Miembros registrados en la familia:\n• Mamá (Admin)\n• Papá\n• Leo")
         }
     }
 }
@@ -153,7 +198,6 @@ private struct NextTaskCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Cabecera de la sección
             HStack {
                 HStack(spacing: 8) {
                     Image(systemName: "paintbrush.pointed.fill")
@@ -169,7 +213,6 @@ private struct NextTaskCard: View {
                     .frame(width: 32, height: 12)
             }
 
-            // Contenedor interior de la tarea
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     isCompleted.toggle()
@@ -261,7 +304,7 @@ private struct SavingsGoalCard: View {
     }
 }
 
-/// Cuadrícula 2x2 con accesos rápidos
+// MARK: - Cuadrícula 2x2: Accesos Rápidos
 private struct QuickActionsGrid: View {
     var onNewTask: () -> Void
     var onAddExpense: () -> Void
@@ -270,10 +313,10 @@ private struct QuickActionsGrid: View {
 
     var body: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
-            QuickActionButton(title: "Nueva Tarea", icon: "checkmark.circle", action: onNewTask)
-            QuickActionButton(title: "Añadir Gasto", icon: "newspaper", action: onAddExpense)
-            QuickActionButton(title: "Evento", icon: "calendar", action: onEvent)
-            QuickActionButton(title: "Más", icon: "ellipsis", action: onMore)
+            QuickActionButton(title: "New Task", icon: "checklist", action: onNewTask)
+            QuickActionButton(title: "Add Expense", icon: "newspaper", action: onAddExpense)
+            QuickActionButton(title: "Event", icon: "calendar", action: onEvent)
+            QuickActionButton(title: "More", icon: "ellipsis", action: onMore)
         }
     }
 }
@@ -285,11 +328,11 @@ private struct QuickActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(HogarGoColors.brandOrangeContainer)
-                        .frame(width: 48, height: 48)
+                        .fill(HogarGoColors.surfaceContainerHigh)
+                        .frame(width: 52, height: 52)
 
                     Image(systemName: icon)
                         .font(.system(size: 20, weight: .semibold))
@@ -297,19 +340,192 @@ private struct QuickActionButton: View {
                 }
 
                 Text(title)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
-            .background(HogarGoColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .padding(.vertical, 20)
+            .background(HogarGoColors.surfaceContainerLow)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(HogarGoColors.borderSubtle, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(HogarGoColors.borderSubtle.opacity(0.8), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
     }
 }
 
+// MARK: - More Bottom Sheet (Fiel al Prototipo)
+private struct MoreBottomSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    var onOpenAbout: () -> Void
+    var onOpenMembers: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Indicador de arrastre / Handle
+            HStack {
+                Spacer()
+                Capsule()
+                    .fill(HogarGoColors.primaryText.opacity(0.4))
+                    .frame(width: 38, height: 4.5)
+                Spacer()
+            }
+            .padding(.top, 10)
+
+            // Título "More"
+            Text("More")
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundStyle(HogarGoColors.primaryText)
+                .padding(.horizontal, 4)
+
+            // Opciones
+            VStack(spacing: 12) {
+                // Opción 1: About HogarGo
+                Button(action: onOpenAbout) {
+                    HStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(HogarGoColors.surfaceContainerHigh)
+                                .frame(width: 46, height: 46)
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 22, weight: .semibold))
+                                .foregroundStyle(HogarGoColors.primaryText)
+                        }
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("About HogarGo")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
+                            Text("App description and team credits")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(HogarGoColors.secondaryText)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(14)
+                    .background(HogarGoColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(HogarGoColors.borderSubtle.opacity(0.7), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                // Opción 2: Integrantes del Hogar
+                Button(action: onOpenMembers) {
+                    HStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(HogarGoColors.surfaceContainerHigh)
+                                .frame(width: 46, height: 46)
+                            Image(systemName: "person.2.fill")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(HogarGoColors.primaryText)
+                        }
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Integrantes del Hogar")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
+                            Text("Ver los miembros registrados de la familia")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(HogarGoColors.secondaryText)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(14)
+                    .background(HogarGoColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(HogarGoColors.borderSubtle.opacity(0.7), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .background(HogarGoColors.background.ignoresSafeArea())
+    }
+}
+
+// MARK: - Modales rápidos auxiliares para Accesos Rápidos
+private struct QuickAddExpenseSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var desc = ""
+    @State private var amount = ""
+
+    var body: some View {
+        VStack(spacing: 20) {
+            HStack {
+                Button("Cancelar") { dismiss() }
+                    .foregroundStyle(HogarGoColors.secondaryText)
+                Spacer()
+                Text("Añadir Gasto")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(HogarGoColors.primaryText)
+                Spacer()
+                Button("Guardar") { dismiss() }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(HogarGoColors.brandOrangeDeep)
+            }
+            .padding(.top, 16)
+
+            VStack(spacing: 14) {
+                TextField("Descripción (ej. Comestibles)", text: $desc)
+                    .padding(14)
+                    .background(HogarGoColors.surfaceContainerLow)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                TextField("Monto (ej. 25.50)", text: $amount)
+                    .keyboardType(.decimalPad)
+                    .padding(14)
+                    .background(HogarGoColors.surfaceContainerLow)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+
+            Spacer()
+        }
+        .padding(20)
+        .background(HogarGoColors.background)
+    }
+}
+
+private struct QuickAddEventSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var title = ""
+
+    var body: some View {
+        VStack(spacing: 20) {
+            HStack {
+                Button("Cancelar") { dismiss() }
+                    .foregroundStyle(HogarGoColors.secondaryText)
+                Spacer()
+                Text("Nuevo Evento")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(HogarGoColors.primaryText)
+                Spacer()
+                Button("Guardar") { dismiss() }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(HogarGoColors.brandOrangeDeep)
+            }
+            .padding(.top, 16)
+
+            TextField("Título del evento (ej. Cena familiar)", text: $title)
+                .padding(14)
+                .background(HogarGoColors.surfaceContainerLow)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+
+            Spacer()
+        }
+        .padding(20)
+        .background(HogarGoColors.background)
+    }
+}
