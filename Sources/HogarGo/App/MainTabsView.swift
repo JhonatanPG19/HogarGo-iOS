@@ -1,7 +1,9 @@
 import SwiftUI
 
-struct RootView: View {
+/// Pestañas principales de la app con la sesión abierta.
+struct MainTabsView: View {
     @State private var selectedTab: HogarGoTab = .home
+    @State private var showProfile = false
 
     var body: some View {
         ZStack {
@@ -10,7 +12,7 @@ struct RootView: View {
 
             VStack(spacing: 0) {
                 // Barra superior permanente
-                HogarGoTopBar()
+                HogarGoTopBar(onAvatarTap: { showProfile = true })
 
                 // Contenido dinámico según la pestaña seleccionada
                 ZStack {
@@ -34,6 +36,9 @@ struct RootView: View {
                 // Barra de navegación inferior
                 HogarGoBottomBar(selectedTab: $selectedTab)
             }
+        }
+        .sheet(isPresented: $showProfile) {
+            ProfileView()
         }
     }
 
