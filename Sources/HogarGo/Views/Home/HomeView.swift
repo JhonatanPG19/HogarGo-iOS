@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(AppState.self) private var appState
+
     // Estados visuales de demostración
     @State private var isTaskCompleted: Bool = false
     @State private var streakDays: Int = 3
@@ -127,8 +129,14 @@ struct HomeView: View {
         .alert("Integrantes del Hogar", isPresented: $showMembersDialog) {
             Button("Cerrar", role: .cancel) {}
         } message: {
-            Text("Miembros registrados en la familia:\n• Mamá (Admin)\n• Papá\n• Leo")
+            Text(membersSummary)
         }
+    }
+
+    private var membersSummary: String {
+        let members = appState.householdId.map(appState.repository.approvedMembers(householdId:)) ?? []
+        let lines = members.map { "• \($0.name)\($0.isAdmin ? " (Admin)" : "")" }
+        return (["Miembros registrados en la familia:"] + lines).joined(separator: "\n")
     }
 }
 
