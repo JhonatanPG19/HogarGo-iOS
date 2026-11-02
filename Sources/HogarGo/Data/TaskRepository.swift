@@ -51,6 +51,12 @@ final class TaskRepository {
         return tasks.compactMap(\.completedDate)
     }
 
+    /// Calcula la información de racha actual para el hogar.
+    func streakInfo(householdId: String) -> StreakInfo {
+        let dates = completedDates(householdId: householdId)
+        return StreakCalculator.calculate(completedDates: dates)
+    }
+
     // MARK: - Modificaciones
 
     /// Crea y persiste una nueva tarea en el hogar.

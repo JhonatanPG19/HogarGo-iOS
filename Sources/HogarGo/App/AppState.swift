@@ -52,6 +52,14 @@ final class AppState {
     var currentMember: Member? { memberId.flatMap(repository.member(id:)) }
     var currentHousehold: Household? { householdId.flatMap(repository.household(id:)) }
 
+    /// Racha actual de tareas del hogar activo.
+    var currentStreak: StreakInfo {
+        guard let householdId else {
+            return StreakInfo(days: 0, isAtRisk: false, hasCompletedToday: false)
+        }
+        return taskRepository.streakInfo(householdId: householdId)
+    }
+
     // MARK: - Sesión
 
     func restore() {
