@@ -99,23 +99,78 @@ final class HouseholdNotice {
     var noticeType: NoticeType? { NoticeType(rawValue: type) }
 }
 
-/// Tarea del hogar. Por ahora solo guarda lo que necesitan las reglas de integrantes
-/// (responsable y hogar); la pantalla de Tareas aún usa datos de ejemplo.
+/// Categorías de tareas domésticas.
+enum TaskCategory: String, Codable, CaseIterable, Identifiable {
+    case kitchen = "COCINA"
+    case garden = "JARDÍN"
+    case general = "GENERAL"
+    case cleaning = "LIMPIEZA"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .kitchen: return "Cocina"
+        case .garden: return "Jardín"
+        case .general: return "General"
+        case .cleaning: return "Limpieza"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .kitchen: return "frying.pan.fill"
+        case .garden: return "leaf.fill"
+        case .general: return "house.fill"
+        case .cleaning: return "sparkles"
+        }
+    }
+}
+
+/// Tarea del hogar con persistencia en SwiftData.
 @Model
 final class HouseholdTask {
     var id: String
     var householdId: String
     var title: String
+    var categoryRaw: String
+    var dueTime: String?
+    var completed: Bool
+    /// Fecha ISO "yyyy-MM-dd" en que se marcó como hecha. Necesaria para calcular rachas.
+    var completedDate: String?
     /// Id del integrante responsable. Pasa a `nil` cuando ese integrante sale o es eliminado.
     var assigneeId: String?
+    /// Recompensa en monedas Zori para la mascota.
+    var coinReward: Int
     var createdAt: Int64
 
-    init(householdId: String, title: String, assigneeId: String? = nil, createdAt: Int64 = Clock.nowMillis()) {
-        self.id = UUID().uuidString
+    init(
+        id: String = UUID().uuidString,
+        householdId: String,
+        title: String,
+        category: TaskCategory = .general,
+        dueTime: String? = "18:00",
+        completed: Bool = false,
+        completedDate: String? = nil,
+        assigneeId: String? = nil,
+        coinReward: Int = 10,
+        createdAt: Int64 = Clock.nowMillis()
+    ) {
+        self.id = id
         self.householdId = householdId
         self.title = title
+        self.categoryRaw = category.rawValue
+        self.dueTime = dueTime
+        self.completed = completed
+        self.completedDate = completedDate
         self.assigneeId = assigneeId
+        self.coinReward = coinReward
         self.createdAt = createdAt
+    }
+
+    var category: TaskCategory {
+        get { TaskCategory(rawValue: categoryRaw) ?? .general }
+        set { categoryRaw = newValue.rawValue }
     }
 }
 

@@ -18,6 +18,7 @@ final class AppState {
     var toast: String?
 
     let repository: HouseholdRepository
+    let taskRepository: TaskRepository
     private let session: SessionStore
     private let notifier: HouseholdNotifier
     @ObservationIgnored private var saveObserver: NSObjectProtocol?
@@ -26,6 +27,7 @@ final class AppState {
 
     init(context: ModelContext, session: SessionStore = SessionStore(), notifier: HouseholdNotifier = HouseholdNotifier()) {
         self.repository = HouseholdRepository(context: context)
+        self.taskRepository = TaskRepository(context: context)
         self.session = session
         self.notifier = notifier
         notifier.setUp()
@@ -69,6 +71,7 @@ final class AppState {
         session.save(.init(memberId: member.id, householdId: member.householdId))
         phase = .signedIn(memberId: member.id, householdId: member.householdId)
         notifier.requestAuthorization()
+        taskRepository.seedInitialTasksIfNeeded(householdId: member.householdId)
         deliverPendingNotices()
     }
 
