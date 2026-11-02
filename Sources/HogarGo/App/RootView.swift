@@ -1,50 +1,28 @@
 import SwiftUI
 
+/// Decide qué mostrar según la sesión: cargando, Bienvenida o Inicio.
 struct RootView: View {
-    @State private var selectedTab: HogarGoTab = .home
+    @Environment(AppState.self) private var appState
 
     var body: some View {
         ZStack {
             HogarGoColors.background
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Barra superior permanente
-                HogarGoTopBar()
-
-                // Contenido dinámico según la pestaña seleccionada
-                ZStack {
-                    switch selectedTab {
-                    case .home:
-                        HomeView(
-                            onNewTaskTap: { selectedTab = .tasks }
-                        )
-                    case .tasks:
-                        TasksView()
-                    case .finance:
-                        FinanceView()
-                    case .pet:
-                        tabPlaceholder(title: "Mascota", icon: "pawprint.fill")
-                    case .calendar:
-                        CalendarView()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                // Barra de navegación inferior
-                HogarGoBottomBar(selectedTab: $selectedTab)
+            switch appState.phase {
+            case .loading:
+                Color.clear
+            case .welcome:
+                WelcomeView()
+            case let .signedIn(_, householdId):
+                // La clave por hogar evita mezclar datos entre hogares.
+                MainTabsView()
+                    .id(householdId)
             }
         }
-    }
-
-    private func tabPlaceholder(title: String, icon: String) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 48))
-                .foregroundStyle(HogarGoColors.brandOrange)
-            Text(title)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundStyle(HogarGoColors.primaryText)
+        .hogarToast(bottomPadding: 90)
+        .task {
+            if appState.phase == .loading { appState.restore() }
         }
     }
 }
