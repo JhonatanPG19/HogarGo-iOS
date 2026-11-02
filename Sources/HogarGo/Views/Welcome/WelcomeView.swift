@@ -94,5 +94,6 @@ struct AccessSheet<Content: View>: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .background(HogarGoColors.background.ignoresSafeArea())
+        .hogarToast()
     }
 }

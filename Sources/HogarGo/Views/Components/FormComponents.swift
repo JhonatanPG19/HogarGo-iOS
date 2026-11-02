@@ -124,6 +124,31 @@ struct ToastBanner: View {
     }
 }
 
+/// Muestra el toast de `AppState`. Las hojas modales tapan la vista raíz,
+/// así que cada hoja también lo aplica para que el mensaje quede visible.
+private struct HogarToastModifier: ViewModifier {
+    @Environment(AppState.self) private var appState
+    let bottomPadding: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .bottom) {
+                if let toast = appState.toast {
+                    ToastBanner(message: toast)
+                        .padding(.bottom, bottomPadding)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: appState.toast)
+    }
+}
+
+extension View {
+    func hogarToast(bottomPadding: CGFloat = 24) -> some View {
+        modifier(HogarToastModifier(bottomPadding: bottomPadding))
+    }
+}
+
 /// Encabezado de las hojas modales: título y botón de cerrar.
 struct SheetHeader: View {
     @Environment(\.dismiss) private var dismiss

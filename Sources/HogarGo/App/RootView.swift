@@ -20,14 +20,7 @@ struct RootView: View {
                     .id(householdId)
             }
         }
-        .overlay(alignment: .bottom) {
-            if let toast = appState.toast {
-                ToastBanner(message: toast)
-                    .padding(.bottom, 90)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(.easeInOut(duration: 0.25), value: appState.toast)
+        .hogarToast(bottomPadding: 90)
         .task {
             if appState.phase == .loading { appState.restore() }
         }

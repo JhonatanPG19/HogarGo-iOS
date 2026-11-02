@@ -68,6 +68,7 @@ private struct ProfileContent: View {
             }
         }
         .background(HogarGoColors.background.ignoresSafeArea())
+        .hogarToast()
         .sheet(item: $editor) { editor in
             if let me, let household {
                 switch editor {

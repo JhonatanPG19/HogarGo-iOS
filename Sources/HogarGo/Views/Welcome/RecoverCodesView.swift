@@ -50,6 +50,7 @@ struct RecoverCodesView: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .background(HogarGoColors.background.ignoresSafeArea())
+        .hogarToast()
     }
 
     private func search(proxy: ScrollViewProxy) {
