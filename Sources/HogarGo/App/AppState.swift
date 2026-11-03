@@ -81,6 +81,7 @@ final class AppState {
         notifier.requestAuthorization()
         taskRepository.seedInitialTasksIfNeeded(householdId: member.householdId)
         deliverPendingNotices()
+        syncStreakReminder()
     }
 
     /// Cierra la sesión del dispositivo. Sigues siendo integrante y los datos se conservan.
@@ -97,6 +98,16 @@ final class AppState {
         try repository.leaveHousehold(memberId: memberId)
     }
 
+    // MARK: - Notificaciones locales de racha
+
+    /// Sincroniza el recordatorio de las 20:00 con el estado actual de tareas y racha.
+    func syncStreakReminder() {
+        guard let householdId else { return }
+        let hasPending = taskRepository.nextPendingTask(householdId: householdId) != nil
+        let atRisk = currentStreak.isAtRisk
+        notifier.updateStreakReminder(hasPendingTasks: hasPending, isStreakAtRisk: atRisk)
+    }
+
     // MARK: - Cambios en la base
 
     private func refresh() {
@@ -109,6 +120,7 @@ final class AppState {
             return
         }
         deliverPendingNotices()
+        syncStreakReminder()
     }
 
     private func deliverPendingNotices() {
