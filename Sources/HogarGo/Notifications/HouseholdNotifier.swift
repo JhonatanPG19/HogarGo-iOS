@@ -1,10 +1,12 @@
 import Foundation
 import UserNotifications
 
-/// Muestra los avisos del hogar como notificaciones locales ("Novedades del hogar").
+/// Muestra los avisos del hogar como notificaciones locales ("Novedades del hogar")
+/// y programa el recordatorio diario de racha a las 20:00 (sección 17 de AGENTS.md).
 @MainActor
 final class HouseholdNotifier: NSObject, UNUserNotificationCenterDelegate {
     static let categoryId = "household_updates"
+    static let streakReminderId = "daily_streak_reminder"
 
     private var center: UNUserNotificationCenter { .current() }
 
@@ -17,6 +19,27 @@ final class HouseholdNotifier: NSObject, UNUserNotificationCenterDelegate {
 
     func requestAuthorization() {
         center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+    }
+
+    /// Programa o actualiza el recordatorio diario de racha a las 20:00.
+    func updateStreakReminder(hasPendingTasks: Bool, isStreakAtRisk: Bool) {
+        center.removePendingNotificationRequests(withIdentifiers: [Self.streakReminderId])
+        guard hasPendingTasks || isStreakAtRisk else { return }
+
+        var dateComponents = DateComponents()
+        dateComponents.hour = 20
+        dateComponents.minute = 0
+
+        let content = UNMutableNotificationContent()
+        content.title = "¡Mantén tu racha en HogarGo! 🔥"
+        content.body = isStreakAtRisk
+            ? "Tu racha diaria está en riesgo. Completa una tarea antes de que termine el día."
+            : "Tienes tareas pendientes en el hogar. ¡Haz que tu casa brille hoy!"
+        content.sound = .default
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: Self.streakReminderId, content: content, trigger: trigger)
+        center.add(request)
     }
 
     /// Si no hay permiso, el aviso igual se considera entregado (lo decide quien llama).

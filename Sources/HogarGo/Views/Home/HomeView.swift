@@ -1,29 +1,36 @@
 import SwiftUI
 
+/// Modales presentables desde la pantalla de Inicio mediante un único modifier `.sheet(item:)`.
+enum HomeModalSheet: String, Identifiable {
+    case newTask
+    case newExpense
+    case newEvent
+    case more
+    case about
+
+    var id: String { rawValue }
+}
+
 struct HomeView: View {
     @Environment(AppState.self) private var appState
 
-    // Estados visuales de demostración
-    @State private var isTaskCompleted: Bool = false
-    @State private var streakDays: Int = 3
-    @State private var showNewTaskSheet: Bool = false
-    @State private var showNewExpenseSheet: Bool = false
-    @State private var showNewEventSheet: Bool = false
-    @State private var showMoreSheet: Bool = false
-    @State private var showAboutSheet: Bool = false
+    // Estados de pantalla y modales
+    @State private var activeSheet: HomeModalSheet? = nil
     @State private var showMembersDialog: Bool = false
+    @State private var dailyAdvice: String = AdviceService.fallbackAdvice
+    @State private var isFetchingAdvice: Bool = false
 
-    var onNewTaskTap: () -> Void = {}
-    var onAddExpenseTap: () -> Void = {}
-    var onEventTap: () -> Void = {}
-    var onMoreTap: () -> Void = {}
+    private var nextPendingTask: HouseholdTask? {
+        guard let householdId = appState.householdId else { return nil }
+        return appState.taskRepository.nextPendingTask(householdId: householdId)
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
                 // 1. Saludo y racha diaria
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("¡Buenos días!")
+                    Text("¡Hola, \(appState.currentMember?.name ?? "Familia")!")
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
 
@@ -32,6 +39,7 @@ struct HomeView: View {
                         .foregroundStyle(HogarGoColors.secondaryText)
 
                     // Chip de Energía Diaria / Racha
+                    let streak = appState.currentStreak
                     HStack(spacing: 10) {
                         ZStack {
                             Circle()
@@ -46,7 +54,7 @@ struct HomeView: View {
                             Text("Energía Diaria")
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(HogarGoColors.primaryText)
-                            Text("Racha de \(streakDays)/7 días")
+                            Text("Racha de \(streak.days)/7 días\(streak.isAtRisk ? " ⚠️" : "")")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(HogarGoColors.secondaryText)
                         }
@@ -62,33 +70,37 @@ struct HomeView: View {
                     .padding(.top, 4)
                 }
 
-                // 2. Tarjeta Héroe: Zori descansando
+                // 2. Tarjeta: Consejo del Día (API en línea)
+                DailyAdviceCard(
+                    advice: dailyAdvice,
+                    isLoading: isFetchingAdvice,
+                    onRefresh: {
+                        Task { await fetchAdvice() }
+                    }
+                )
+
+                // 3. Tarjeta Héroe: Zori descansando
                 ZoriRestingCard()
 
-                // 3. Tarjeta: Siguiente Tarea
-                NextTaskCard(isCompleted: $isTaskCompleted)
+                // 4. Tarjeta: Siguiente Tarea (Persistencia real)
+                NextTaskCard(
+                    task: nextPendingTask,
+                    onToggle: {
+                        if let task = nextPendingTask {
+                            appState.taskRepository.toggleTask(id: task.id)
+                        }
+                    }
+                )
 
-                // 4. Tarjeta: Meta de Ahorro
+                // 5. Tarjeta: Meta de Ahorro
                 SavingsGoalCard()
 
-                // 5. Cuadrícula 2x2: Accesos rápidos (New Task, Add Expense, Event, More)
+                // 6. Cuadrícula 2x2: Accesos rápidos (New Task, Add Expense, Event, More)
                 QuickActionsGrid(
-                    onNewTask: {
-                        showNewTaskSheet = true
-                        onNewTaskTap()
-                    },
-                    onAddExpense: {
-                        showNewExpenseSheet = true
-                        onAddExpenseTap()
-                    },
-                    onEvent: {
-                        showNewEventSheet = true
-                        onEventTap()
-                    },
-                    onMore: {
-                        showMoreSheet = true
-                        onMoreTap()
-                    }
+                    onNewTask: { activeSheet = .newTask },
+                    onAddExpense: { activeSheet = .newExpense },
+                    onEvent: { activeSheet = .newEvent },
+                    onMore: { activeSheet = .more }
                 )
 
                 Spacer(minLength: 24)
@@ -97,34 +109,35 @@ struct HomeView: View {
             .padding(.top, 12)
         }
         .background(HogarGoColors.background)
-        .sheet(isPresented: $showNewTaskSheet) {
-            NewTaskView()
+        .task {
+            if dailyAdvice == AdviceService.fallbackAdvice {
+                await fetchAdvice()
+            }
         }
-        .sheet(isPresented: $showNewExpenseSheet) {
-            QuickAddExpenseSheet()
-        }
-        .sheet(isPresented: $showNewEventSheet) {
-            QuickAddEventSheet()
-        }
-        .sheet(isPresented: $showMoreSheet) {
-            MoreBottomSheet(
-                onOpenAbout: {
-                    showMoreSheet = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        showAboutSheet = true
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .newTask:
+                NewTaskView()
+            case .newExpense:
+                QuickAddExpenseSheet()
+            case .newEvent:
+                QuickAddEventSheet()
+            case .more:
+                MoreBottomSheet(
+                    onOpenAbout: {
+                        activeSheet = .about
+                    },
+                    onOpenMembers: {
+                        activeSheet = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showMembersDialog = true
+                        }
                     }
-                },
-                onOpenMembers: {
-                    showMoreSheet = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        showMembersDialog = true
-                    }
-                }
-            )
-            .presentationDetents([.fraction(0.38), .medium])
-        }
-        .sheet(isPresented: $showAboutSheet) {
-            AboutView()
+                )
+                .presentationDetents([.fraction(0.38), .medium])
+            case .about:
+                AboutView()
+            }
         }
         .alert("Integrantes del Hogar", isPresented: $showMembersDialog) {
             Button("Cerrar", role: .cancel) {}
@@ -133,14 +146,73 @@ struct HomeView: View {
         }
     }
 
+    private func fetchAdvice() async {
+        isFetchingAdvice = true
+        dailyAdvice = await AdviceService.shared.fetchDailyAdvice()
+        isFetchingAdvice = false
+    }
+
     private var membersSummary: String {
         let members = appState.householdId.map(appState.repository.approvedMembers(householdId:)) ?? []
+        guard !members.isEmpty else {
+            return "No hay integrantes registrados en este hogar todavía."
+        }
         let lines = members.map { "• \($0.name)\($0.isAdmin ? " (Admin)" : "")" }
         return (["Miembros registrados en la familia:"] + lines).joined(separator: "\n")
     }
 }
 
 // MARK: - Subcomponentes de Inicio
+
+/// Tarjeta del Consejo del Día consumido de la API externa
+private struct DailyAdviceCard: View {
+    let advice: String
+    let isLoading: Bool
+    let onRefresh: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(HogarGoColors.brandOrangeDeep)
+                    Text("CONSEJO DEL DÍA")
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        .foregroundStyle(HogarGoColors.primaryText)
+                        .tracking(0.5)
+                }
+
+                Spacer()
+
+                Button(action: onRefresh) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(HogarGoColors.primaryText)
+                        .rotationEffect(.degrees(isLoading ? 360 : 0))
+                        .animation(isLoading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isLoading)
+                        .padding(6)
+                        .background(HogarGoColors.surfaceContainerHigh)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .disabled(isLoading)
+            }
+
+            Text("“\(advice)”")
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(HogarGoColors.primaryText)
+                .lineSpacing(3)
+        }
+        .padding(16)
+        .background(HogarGoColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(HogarGoColors.borderSubtle, lineWidth: 1)
+        )
+    }
+}
 
 /// Tarjeta principal de Zori descansando
 private struct ZoriRestingCard: View {
@@ -202,7 +274,8 @@ private struct ZoriRestingCard: View {
 
 /// Tarjeta de próxima tarea pendiente
 private struct NextTaskCard: View {
-    @Binding var isCompleted: Bool
+    let task: HouseholdTask?
+    let onToggle: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -216,38 +289,54 @@ private struct NextTaskCard: View {
                         .foregroundStyle(HogarGoColors.primaryText)
                 }
                 Spacer()
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(HogarGoColors.brandOrangeContainer.opacity(0.6))
-                    .frame(width: 32, height: 12)
+                if let task {
+                    Text(categoryLabel(task.category))
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .foregroundStyle(HogarGoColors.primaryText)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(HogarGoColors.surfaceContainer)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
             }
 
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                    isCompleted.toggle()
-                }
-            } label: {
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: isCompleted ? "checkmark.square.fill" : "square")
-                        .font(.system(size: 24))
-                        .foregroundStyle(isCompleted ? HogarGoColors.brandOrangeDeep : HogarGoColors.outlineVariant)
+            if let task {
+                Button(action: onToggle) {
+                    HStack(alignment: .top, spacing: 14) {
+                        Image(systemName: task.completed ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 24))
+                            .foregroundStyle(task.completed ? HogarGoColors.brandOrangeDeep : HogarGoColors.outlineVariant)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Lavar los platos")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .strikethrough(isCompleted, color: HogarGoColors.secondaryText)
-                            .foregroundStyle(isCompleted ? HogarGoColors.secondaryText : Color(red: 34/255, green: 26/255, blue: 21/255))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(task.title)
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
 
-                        Text("Cocina • 15 mins")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(HogarGoColors.secondaryText)
+                            Text("Para las \(task.dueTime ?? "18:00") • +\(task.coinReward) 🪙")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(HogarGoColors.secondaryText)
+                        }
+                        Spacer()
                     }
+                    .padding(14)
+                    .background(HogarGoColors.surfaceContainerLow)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            } else {
+                HStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(HogarGoColors.brandOrangeDeep)
+                    Text("¡Todo al día! No hay tareas pendientes.")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(HogarGoColors.secondaryText)
                     Spacer()
                 }
                 .padding(14)
                 .background(HogarGoColors.surfaceContainerLow)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
-            .buttonStyle(.plain)
         }
         .padding(16)
         .background(HogarGoColors.surface)
@@ -256,6 +345,15 @@ private struct NextTaskCard: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(HogarGoColors.borderSubtle, lineWidth: 1)
         )
+    }
+
+    private func categoryLabel(_ cat: TaskCategory) -> String {
+        switch cat {
+        case .kitchen: return "COCINA"
+        case .garden: return "JARDÍN"
+        case .general: return "GENERAL"
+        case .cleaning: return "LIMPIEZA"
+        }
     }
 }
 

@@ -4,6 +4,8 @@ import Foundation
 enum HogarError: String, Error, Equatable {
     case emptyName = "EMPTY_NAME"
     case emptyHouseholdName = "EMPTY_HOUSEHOLD_NAME"
+    case emptyTaskTitle = "EMPTY_TASK_TITLE"
+    case taskNotFound = "TASK_NOT_FOUND"
     case invalidCode = "INVALID_CODE"
     case codeNotFound = "CODE_NOT_FOUND"
     case codeTaken = "CODE_TAKEN"
@@ -22,7 +24,7 @@ enum HogarError: String, Error, Equatable {
     case unknown = "UNKNOWN"
 
     /// Campo bajo el que se muestra el error en los formularios.
-    enum Field { case name, household, code, recovery, general }
+    enum Field { case name, household, code, recovery, task, general }
 
     var field: Field {
         switch self {
@@ -30,6 +32,7 @@ enum HogarError: String, Error, Equatable {
         case .recoveryUserInvalid, .recoveryUserSameAsName, .recoveryCurrentWrong,
              .recoveryMismatch, .recoverySameAsCurrent: return .recovery
         case .emptyHouseholdName: return .household
+        case .emptyTaskTitle, .taskNotFound: return .task
         case .notAllowed, .unknown: return .general
         default: return .name
         }
@@ -39,6 +42,8 @@ enum HogarError: String, Error, Equatable {
         switch self {
         case .emptyName: return L10n.tr("Escribe tu nombre", "Enter your name")
         case .emptyHouseholdName: return L10n.tr("Escribe el nombre del hogar", "Enter the home name")
+        case .emptyTaskTitle: return L10n.tr("Escribe una descripción para la tarea", "Enter a title for the task")
+        case .taskNotFound: return L10n.tr("No encontramos esa tarea", "Task not found")
         case .invalidCode: return L10n.tr("El código debe tener 6 caracteres", "The code must have 6 characters")
         case .codeNotFound: return L10n.tr("No existe un hogar con ese código", "There's no home with that code")
         case .codeTaken: return L10n.tr("Ese código ya está en uso. Generamos otro.", "That code is already in use. We generated another one.")
