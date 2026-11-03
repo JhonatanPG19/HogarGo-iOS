@@ -18,9 +18,7 @@ struct MainTabsView: View {
                 ZStack {
                     switch selectedTab {
                     case .home:
-                        HomeView(
-                            onNewTaskTap: { selectedTab = .tasks }
-                        )
+                        HomeView()
                     case .tasks:
                         TasksView()
                     case .finance:

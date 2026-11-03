@@ -1,22 +1,23 @@
 import SwiftUI
 
+/// Modales presentables desde la pantalla de Inicio mediante un único modifier `.sheet(item:)`.
+enum HomeModalSheet: String, Identifiable {
+    case newTask
+    case newExpense
+    case newEvent
+    case more
+    case about
+
+    var id: String { rawValue }
+}
+
 struct HomeView: View {
     @Environment(AppState.self) private var appState
 
-    // Estados visuales de demostración
+    // Estados de pantalla y modales
     @State private var isTaskCompleted: Bool = false
-    @State private var streakDays: Int = 3
-    @State private var showNewTaskSheet: Bool = false
-    @State private var showNewExpenseSheet: Bool = false
-    @State private var showNewEventSheet: Bool = false
-    @State private var showMoreSheet: Bool = false
-    @State private var showAboutSheet: Bool = false
+    @State private var activeSheet: HomeModalSheet? = nil
     @State private var showMembersDialog: Bool = false
-
-    var onNewTaskTap: () -> Void = {}
-    var onAddExpenseTap: () -> Void = {}
-    var onEventTap: () -> Void = {}
-    var onMoreTap: () -> Void = {}
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -32,6 +33,7 @@ struct HomeView: View {
                         .foregroundStyle(HogarGoColors.secondaryText)
 
                     // Chip de Energía Diaria / Racha
+                    let streak = appState.currentStreak
                     HStack(spacing: 10) {
                         ZStack {
                             Circle()
@@ -46,7 +48,7 @@ struct HomeView: View {
                             Text("Energía Diaria")
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(HogarGoColors.primaryText)
-                            Text("Racha de \(streakDays)/7 días")
+                            Text("Racha de \(streak.days)/7 días\(streak.isAtRisk ? " ⚠️" : "")")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(HogarGoColors.secondaryText)
                         }
@@ -73,22 +75,10 @@ struct HomeView: View {
 
                 // 5. Cuadrícula 2x2: Accesos rápidos (New Task, Add Expense, Event, More)
                 QuickActionsGrid(
-                    onNewTask: {
-                        showNewTaskSheet = true
-                        onNewTaskTap()
-                    },
-                    onAddExpense: {
-                        showNewExpenseSheet = true
-                        onAddExpenseTap()
-                    },
-                    onEvent: {
-                        showNewEventSheet = true
-                        onEventTap()
-                    },
-                    onMore: {
-                        showMoreSheet = true
-                        onMoreTap()
-                    }
+                    onNewTask: { activeSheet = .newTask },
+                    onAddExpense: { activeSheet = .newExpense },
+                    onEvent: { activeSheet = .newEvent },
+                    onMore: { activeSheet = .more }
                 )
 
                 Spacer(minLength: 24)
@@ -97,34 +87,30 @@ struct HomeView: View {
             .padding(.top, 12)
         }
         .background(HogarGoColors.background)
-        .sheet(isPresented: $showNewTaskSheet) {
-            NewTaskView()
-        }
-        .sheet(isPresented: $showNewExpenseSheet) {
-            QuickAddExpenseSheet()
-        }
-        .sheet(isPresented: $showNewEventSheet) {
-            QuickAddEventSheet()
-        }
-        .sheet(isPresented: $showMoreSheet) {
-            MoreBottomSheet(
-                onOpenAbout: {
-                    showMoreSheet = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        showAboutSheet = true
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .newTask:
+                NewTaskView()
+            case .newExpense:
+                QuickAddExpenseSheet()
+            case .newEvent:
+                QuickAddEventSheet()
+            case .more:
+                MoreBottomSheet(
+                    onOpenAbout: {
+                        activeSheet = .about
+                    },
+                    onOpenMembers: {
+                        activeSheet = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showMembersDialog = true
+                        }
                     }
-                },
-                onOpenMembers: {
-                    showMoreSheet = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        showMembersDialog = true
-                    }
-                }
-            )
-            .presentationDetents([.fraction(0.38), .medium])
-        }
-        .sheet(isPresented: $showAboutSheet) {
-            AboutView()
+                )
+                .presentationDetents([.fraction(0.38), .medium])
+            case .about:
+                AboutView()
+            }
         }
         .alert("Integrantes del Hogar", isPresented: $showMembersDialog) {
             Button("Cerrar", role: .cancel) {}
@@ -135,6 +121,9 @@ struct HomeView: View {
 
     private var membersSummary: String {
         let members = appState.householdId.map(appState.repository.approvedMembers(householdId:)) ?? []
+        guard !members.isEmpty else {
+            return "No hay integrantes registrados en este hogar todavía."
+        }
         let lines = members.map { "• \($0.name)\($0.isAdmin ? " (Admin)" : "")" }
         return (["Miembros registrados en la familia:"] + lines).joined(separator: "\n")
     }

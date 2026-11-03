@@ -2,16 +2,23 @@ import SwiftUI
 
 struct NewTaskView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppState.self) private var appState
 
-    // Estados visuales de formulario
+    // Campos del formulario
     @State private var taskTitle: String = ""
     @State private var selectedCategory: TaskCategoryOption = .kitchen
     @State private var selectedDate: String = "Hoy"
     @State private var selectedTime: String = "18:00"
-    @State private var coinReward: Double = 30
-    @State private var selectedAssignee: String = "Mamá"
+    @State private var coinReward: Double = 15
+    @State private var selectedAssigneeId: String? = nil
+    @State private var errorMessage: String? = nil
 
     var onSave: () -> Void = {}
+
+    private var members: [Member] {
+        guard let householdId = appState.householdId else { return [] }
+        return appState.repository.approvedMembers(householdId: householdId)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,7 +42,6 @@ struct NewTaskView: View {
 
                 Spacer()
 
-                // Espacio para equilibrar el botón de retroceso
                 Color.clear
                     .frame(width: 44, height: 44)
             }
@@ -46,6 +52,14 @@ struct NewTaskView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
+                    // Mensaje de error si falla la validación
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.red)
+                            .padding(.horizontal, 4)
+                    }
+
                     // 2. Tarjeta "¿Qué hay que hacer?"
                     VStack(alignment: .leading, spacing: 10) {
                         Text("¿Qué hay que hacer?")
@@ -104,7 +118,7 @@ struct NewTaskView: View {
                         }
                     }
 
-                    // 4. Fecha y Hora en paralelo
+                    // 4. Fecha y Hora
                     HStack(spacing: 12) {
                         // Tarjeta Fecha
                         VStack(alignment: .leading, spacing: 8) {
@@ -196,7 +210,6 @@ struct NewTaskView: View {
                                 .foregroundStyle(HogarGoColors.brandOrangeContainer)
                         }
 
-                        // Slider nativo estilizado
                         Slider(value: $coinReward, in: 5...50, step: 5)
                             .tint(HogarGoColors.brandOrangeDeep)
 
@@ -222,52 +235,45 @@ struct NewTaskView: View {
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundStyle(HogarGoColors.primaryText)
 
-                        HStack(spacing: 16) {
-                            AssigneeAvatarItem(
-                                name: "Mamá",
-                                icon: "person.crop.circle.fill",
-                                isSelected: selectedAssignee == "Mamá",
-                                onSelect: { selectedAssignee = "Mamá" }
-                            )
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 16) {
+                                ForEach(members) { member in
+                                    AssigneeAvatarItem(
+                                        name: member.name,
+                                        icon: member.isAdmin ? "crown.fill" : "person.crop.circle.fill",
+                                        isSelected: selectedAssigneeId == member.id,
+                                        onSelect: {
+                                            selectedAssigneeId = member.id
+                                        }
+                                    )
+                                }
 
-                            AssigneeAvatarItem(
-                                name: "Leo",
-                                icon: "figure.child",
-                                isSelected: selectedAssignee == "Leo",
-                                onSelect: { selectedAssignee = "Leo" }
-                            )
+                                // Botón "Sin asignar"
+                                Button {
+                                    selectedAssigneeId = nil
+                                } label: {
+                                    VStack(spacing: 8) {
+                                        ZStack {
+                                            Circle()
+                                                .strokeBorder(
+                                                    selectedAssigneeId == nil ? HogarGoColors.brandOrangeDeep : HogarGoColors.outlineVariant,
+                                                    style: StrokeStyle(lineWidth: 1.5, dash: [4, 4])
+                                                )
+                                                .frame(width: 52, height: 52)
 
-                            AssigneeAvatarItem(
-                                name: "Papá",
-                                icon: "person.fill",
-                                isSelected: selectedAssignee == "Papá",
-                                onSelect: { selectedAssignee = "Papá" }
-                            )
+                                            Image(systemName: "person.crop.circle.badge.questionmark")
+                                                .font(.system(size: 20, weight: .semibold))
+                                                .foregroundStyle(HogarGoColors.primaryText)
+                                        }
 
-                            // Botón "Otro" punteado
-                            Button {
-                                selectedAssignee = "Otro"
-                            } label: {
-                                VStack(spacing: 8) {
-                                    ZStack {
-                                        Circle()
-                                            .strokeBorder(
-                                                selectedAssignee == "Otro" ? HogarGoColors.brandOrangeDeep : HogarGoColors.outlineVariant,
-                                                style: StrokeStyle(lineWidth: 1.5, dash: [4, 4])
-                                            )
-                                            .frame(width: 52, height: 52)
-
-                                        Image(systemName: "plus")
-                                            .font(.system(size: 18, weight: .semibold))
+                                        Text("Cualquiera")
+                                            .font(.system(size: 12, weight: .medium, design: .rounded))
                                             .foregroundStyle(HogarGoColors.primaryText)
                                     }
-
-                                    Text("Otro")
-                                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                                        .foregroundStyle(HogarGoColors.primaryText)
                                 }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
+                            .padding(.vertical, 4)
                         }
                     }
 
@@ -279,8 +285,7 @@ struct NewTaskView: View {
 
             // 7. Botón "Crear Misión" al pie
             Button {
-                onSave()
-                dismiss()
+                saveTask()
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles")
@@ -301,6 +306,47 @@ struct NewTaskView: View {
             .background(HogarGoColors.background)
         }
         .background(HogarGoColors.background)
+        .onAppear {
+            if selectedAssigneeId == nil {
+                selectedAssigneeId = appState.memberId
+            }
+        }
+    }
+
+    private func saveTask() {
+        let title = taskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else {
+            errorMessage = "Ingresa el nombre o descripción de la tarea."
+            return
+        }
+
+        guard let householdId = appState.householdId else {
+            errorMessage = "No hay un hogar activo seleccionado."
+            return
+        }
+
+        let cat: TaskCategory
+        switch selectedCategory {
+        case .kitchen: cat = .kitchen
+        case .garden: cat = .garden
+        case .general: cat = .general
+        case .cleaning: cat = .cleaning
+        }
+
+        do {
+            try appState.taskRepository.createTask(
+                householdId: householdId,
+                title: title,
+                category: cat,
+                dueTime: selectedTime,
+                assigneeId: selectedAssigneeId,
+                coinReward: Int(coinReward)
+            )
+            onSave()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 
@@ -338,7 +384,7 @@ private struct AssigneeAvatarItem: View {
                             .fill(HogarGoColors.surfaceContainerHigh)
                             .frame(width: 52, height: 52)
                         Image(systemName: icon)
-                            .font(.system(size: 26))
+                            .font(.system(size: 22))
                             .foregroundStyle(HogarGoColors.primaryText.opacity(0.85))
                     }
                     .overlay(
@@ -358,9 +404,9 @@ private struct AssigneeAvatarItem: View {
                 Text(name)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(HogarGoColors.primaryText)
+                    .lineLimit(1)
             }
         }
         .buttonStyle(.plain)
     }
 }
-

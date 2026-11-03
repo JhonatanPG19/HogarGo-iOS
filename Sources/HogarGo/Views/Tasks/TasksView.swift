@@ -1,38 +1,17 @@
 import SwiftUI
 
 struct TasksView: View {
-    // Modelos visuales para demostración
-    @State private var tasks: [TaskItemMock] = [
-        TaskItemMock(
-            id: "1",
-            category: "COCINA",
-            title: "Vaciar el Lavavajillas",
-            timeLabel: "Para las 5 PM",
-            isCompleted: false,
-            rewardText: "15 🪙",
-            assignedName: "Papá",
-            avatarIcon: "person.crop.circle.fill"
-        ),
-        TaskItemMock(
-            id: "2",
-            category: "JARDÍN",
-            title: "Regar los Tomates",
-            completedByText: "Completado por Mamá",
-            isCompleted: true,
-            rewardText: "+20 ❤️"
-        ),
-        TaskItemMock(
-            id: "3",
-            category: "GENERAL",
-            title: "Doblar la Ropa",
-            unassigned: true,
-            isCompleted: false,
-            rewardText: "30 🪙"
-        )
-    ]
-
+    @Environment(AppState.self) private var appState
     @State private var showNewTaskSheet: Bool = false
-    var onProposeNewTask: () -> Void = {}
+
+    private var tasks: [HouseholdTask] {
+        guard let householdId = appState.householdId else { return [] }
+        return appState.taskRepository.tasks(householdId: householdId)
+    }
+
+    private var streak: StreakInfo {
+        appState.currentStreak
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -49,19 +28,42 @@ struct TasksView: View {
                 }
 
                 // 2. Banner de racha actual
-                StreakBannerView(days: 4)
+                StreakBannerView(days: streak.days, isAtRisk: streak.isAtRisk)
 
                 // 3. Lista de tarjetas de tareas
-                VStack(spacing: 16) {
-                    ForEach($tasks) { $task in
-                        TaskRowCard(task: $task)
+                if tasks.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checklist.checked")
+                            .font(.system(size: 40))
+                            .foregroundStyle(HogarGoColors.brandOrangeDeep.opacity(0.6))
+                        Text("No hay tareas pendientes")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundStyle(HogarGoColors.primaryText)
+                        Text("Crea una nueva misión desde el botón inferior.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(HogarGoColors.secondaryText)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 32)
+                    .background(HogarGoColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                } else {
+                    VStack(spacing: 16) {
+                        ForEach(tasks) { task in
+                            TaskRowCard(
+                                task: task,
+                                assigneeName: memberName(for: task.assigneeId),
+                                onToggle: {
+                                    appState.taskRepository.toggleTask(id: task.id)
+                                }
+                            )
+                        }
                     }
                 }
 
                 // 4. Botón punteado "Proponer Nueva Misión"
                 Button {
                     showNewTaskSheet = true
-                    onProposeNewTask()
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "plus")
@@ -95,11 +97,17 @@ struct TasksView: View {
             NewTaskView()
         }
     }
+
+    private func memberName(for memberId: String?) -> String? {
+        guard let memberId else { return nil }
+        return appState.repository.member(id: memberId)?.name
+    }
 }
 
 // MARK: - Banner de Racha
 private struct StreakBannerView: View {
     let days: Int
+    let isAtRisk: Bool
 
     var body: some View {
         HStack(spacing: 14) {
@@ -118,7 +126,7 @@ private struct StreakBannerView: View {
                     .foregroundStyle(HogarGoColors.primaryText)
                     .tracking(0.5)
 
-                Text("¡\(days) Días Seguidos!")
+                Text(days == 1 ? "¡1 Día Activo!" : "¡\(days) Días Seguidos!\(isAtRisk ? " ⚠️" : "")")
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(HogarGoColors.primaryText)
             }
@@ -134,21 +142,19 @@ private struct StreakBannerView: View {
 
 // MARK: - Tarjeta de Fila de Tarea
 private struct TaskRowCard: View {
-    @Binding var task: TaskItemMock
+    let task: HouseholdTask
+    let assigneeName: String?
+    let onToggle: () -> Void
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             // Contenedor principal de la tarjeta
             HStack(alignment: .top, spacing: 14) {
                 // Checkbox interactivo
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        task.isCompleted.toggle()
-                    }
-                } label: {
-                    Image(systemName: task.isCompleted ? "checkmark.square.fill" : "square")
+                Button(action: onToggle) {
+                    Image(systemName: task.completed ? "checkmark.square.fill" : "square")
                         .font(.system(size: 26))
-                        .foregroundStyle(task.isCompleted ? HogarGoColors.brandOrangeDeep : HogarGoColors.outlineVariant)
+                        .foregroundStyle(task.completed ? HogarGoColors.brandOrangeDeep : HogarGoColors.outlineVariant)
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 2)
@@ -157,22 +163,30 @@ private struct TaskRowCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(task.title)
                         .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .strikethrough(task.isCompleted, color: HogarGoColors.secondaryText)
-                        .foregroundStyle(task.isCompleted ? HogarGoColors.secondaryText : Color(red: 34/255, green: 26/255, blue: 21/255))
+                        .strikethrough(task.completed, color: HogarGoColors.secondaryText)
+                        .foregroundStyle(task.completed ? HogarGoColors.secondaryText : Color(red: 34/255, green: 26/255, blue: 21/255))
 
-                    if let completedBy = task.completedByText {
-                        Text(completedBy)
+                    if task.completed, let date = task.completedDate {
+                        Text("Completado (\(date))")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(HogarGoColors.secondaryText)
-                    } else if let time = task.timeLabel {
+                    } else if let due = task.dueTime {
                         HStack(spacing: 4) {
                             Image(systemName: "clock")
                                 .font(.system(size: 12))
-                            Text(time)
+                            Text("Para las \(due)")
                                 .font(.system(size: 13, weight: .medium))
                         }
                         .foregroundStyle(HogarGoColors.secondaryText)
-                    } else if task.unassigned {
+                    } else if let assignee = assigneeName {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 12))
+                            Text(assignee)
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundStyle(HogarGoColors.secondaryText)
+                    } else {
                         HStack(spacing: 4) {
                             Image(systemName: "person.2")
                                 .font(.system(size: 12))
@@ -185,9 +199,9 @@ private struct TaskRowCard: View {
 
                 Spacer()
 
-                // Lado derecho: monedas y avatar si aplica
+                // Lado derecho: monedas y avatar
                 VStack(alignment: .trailing, spacing: 8) {
-                    Text(task.rewardText)
+                    Text("\(task.coinReward) 🪙")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(HogarGoColors.primaryText)
                         .padding(.horizontal, 10)
@@ -195,14 +209,19 @@ private struct TaskRowCard: View {
                         .background(HogarGoColors.surfaceContainer)
                         .clipShape(Capsule())
 
-                    if let _ = task.assignedName {
-                        ZStack {
-                            Circle()
-                                .fill(HogarGoColors.surfaceContainerHigh)
-                                .frame(width: 26, height: 26)
-                            Image(systemName: "person.crop.circle.fill")
-                                .font(.system(size: 22))
-                                .foregroundStyle(HogarGoColors.primaryText.opacity(0.8))
+                    if let name = assigneeName {
+                        HStack(spacing: 4) {
+                            Text(name)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(HogarGoColors.secondaryText)
+                            ZStack {
+                                Circle()
+                                    .fill(HogarGoColors.surfaceContainerHigh)
+                                    .frame(width: 24, height: 24)
+                                Image(systemName: "person.crop.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(HogarGoColors.primaryText.opacity(0.8))
+                            }
                         }
                     }
                 }
@@ -218,7 +237,7 @@ private struct TaskRowCard: View {
             )
 
             // Etiqueta de categoría en la esquina superior izquierda
-            Text(task.category)
+            Text(categoryLabel(task.category))
                 .font(.system(size: 10, weight: .heavy, design: .rounded))
                 .foregroundStyle(HogarGoColors.primaryText)
                 .padding(.horizontal, 8)
@@ -228,19 +247,13 @@ private struct TaskRowCard: View {
                 .offset(x: 12, y: -6)
         }
     }
-}
 
-// MARK: - Modelo Mock para Tareas
-struct TaskItemMock: Identifiable {
-    let id: String
-    var category: String
-    var title: String
-    var timeLabel: String? = nil
-    var completedByText: String? = nil
-    var unassigned: Bool = false
-    var isCompleted: Bool
-    var rewardText: String
-    var assignedName: String? = nil
-    var avatarIcon: String? = nil
+    private func categoryLabel(_ cat: TaskCategory) -> String {
+        switch cat {
+        case .kitchen: return "COCINA"
+        case .garden: return "JARDÍN"
+        case .general: return "GENERAL"
+        case .cleaning: return "LIMPIEZA"
+        }
+    }
 }
-
