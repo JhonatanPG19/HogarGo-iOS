@@ -21,6 +21,7 @@ final class AppState {
     let taskRepository: TaskRepository
     let financeRepository: FinanceRepository
     let petRepository: PetRepository
+    let calendarRepository: CalendarRepository
     private let session: SessionStore
     private let notifier: HouseholdNotifier
     @ObservationIgnored private var saveObserver: NSObjectProtocol?
@@ -32,6 +33,7 @@ final class AppState {
         self.taskRepository = TaskRepository(context: context)
         self.financeRepository = FinanceRepository(context: context)
         self.petRepository = PetRepository(context: context)
+        self.calendarRepository = CalendarRepository(context: context)
         self.session = session
         self.notifier = notifier
         notifier.setUp()
