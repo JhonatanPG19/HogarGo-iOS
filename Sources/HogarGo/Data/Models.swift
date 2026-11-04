@@ -191,6 +191,12 @@ enum HogarGoSchema {
         Member.self,
         HouseholdNotice.self,
         HouseholdTask.self,
+        Expense.self,
+        SavingsGoal.self,
+        PetState.self,
+        WardrobeItem.self,
+        Bill.self,
+        CalendarEvent.self,
     ]
 }
 

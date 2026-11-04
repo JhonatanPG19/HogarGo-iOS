@@ -367,8 +367,8 @@ final class HouseholdRepository {
         }
     }
 
-    /// Borra el hogar y todos sus datos. Cuando se porten gastos, metas, mascota,
-    /// ropero, facturas y eventos, sus modelos también se deben borrar aquí.
+    /// Borra el hogar y todos sus datos (tareas, gastos, metas, mascota, ropero,
+    /// facturas, eventos, avisos e integrantes).
     private func deleteEverything(of household: Household) {
         let householdId = household.id
         let tasks = FetchDescriptor<HouseholdTask>(predicate: #Predicate { $0.householdId == householdId })
@@ -377,7 +377,17 @@ final class HouseholdRepository {
         ((try? context.fetch(tasks)) ?? []).forEach(context.delete)
         ((try? context.fetch(notices)) ?? []).forEach(context.delete)
         ((try? context.fetch(members)) ?? []).forEach(context.delete)
+        deleteAll(Expense.self, FetchDescriptor<Expense>(predicate: #Predicate { $0.householdId == householdId }))
+        deleteAll(SavingsGoal.self, FetchDescriptor<SavingsGoal>(predicate: #Predicate { $0.householdId == householdId }))
+        deleteAll(PetState.self, FetchDescriptor<PetState>(predicate: #Predicate { $0.householdId == householdId }))
+        deleteAll(WardrobeItem.self, FetchDescriptor<WardrobeItem>(predicate: #Predicate { $0.householdId == householdId }))
+        deleteAll(Bill.self, FetchDescriptor<Bill>(predicate: #Predicate { $0.householdId == householdId }))
+        deleteAll(CalendarEvent.self, FetchDescriptor<CalendarEvent>(predicate: #Predicate { $0.householdId == householdId }))
         context.delete(household)
+    }
+
+    private func deleteAll<T: PersistentModel>(_ type: T.Type, _ descriptor: FetchDescriptor<T>) {
+        ((try? context.fetch(descriptor)) ?? []).forEach(context.delete)
     }
 
     private func transaction<T>(_ work: () throws -> T) throws -> T {

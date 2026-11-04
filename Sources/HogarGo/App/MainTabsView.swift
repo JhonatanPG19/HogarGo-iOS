@@ -24,7 +24,7 @@ struct MainTabsView: View {
                     case .finance:
                         FinanceView()
                     case .pet:
-                        tabPlaceholder(title: "Mascota", icon: "pawprint.fill")
+                        PetView()
                     case .calendar:
                         CalendarView()
                     }
