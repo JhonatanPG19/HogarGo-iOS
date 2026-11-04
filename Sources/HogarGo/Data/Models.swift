@@ -191,6 +191,8 @@ enum HogarGoSchema {
         Member.self,
         HouseholdNotice.self,
         HouseholdTask.self,
+        Expense.self,
+        SavingsGoal.self,
     ]
 }
 
