@@ -79,8 +79,10 @@ struct HomeView: View {
                     }
                 )
 
-                // 3. Tarjeta Héroe: Zori descansando
-                ZoriRestingCard()
+                // 3. Tarjeta Héroe: Zori (estado real de la mascota)
+                if let householdId = appState.householdId {
+                    HomeZoriCard(householdId: householdId)
+                }
 
                 // 4. Tarjeta: Siguiente Tarea (Persistencia real)
                 NextTaskCard(
@@ -92,8 +94,10 @@ struct HomeView: View {
                     }
                 )
 
-                // 5. Tarjeta: Meta de Ahorro
-                SavingsGoalCard()
+                // 5. Tarjeta: Meta de Ahorro (real, si existe)
+                if let householdId = appState.householdId {
+                    HomeGoalCard(householdId: householdId)
+                }
 
                 // 6. Cuadrícula 2x2: Accesos rápidos (New Task, Add Expense, Event, More)
                 QuickActionsGrid(
@@ -119,9 +123,13 @@ struct HomeView: View {
             case .newTask:
                 NewTaskView()
             case .newExpense:
-                QuickAddExpenseSheet()
+                if let householdId = appState.householdId {
+                    AddExpenseSheet(householdId: householdId)
+                }
             case .newEvent:
-                QuickAddEventSheet()
+                if let householdId = appState.householdId {
+                    AddEventSheet(householdId: householdId, initialDate: Date(), onCreated: { _ in })
+                }
             case .more:
                 MoreBottomSheet(
                     onOpenAbout: {
@@ -214,64 +222,6 @@ private struct DailyAdviceCard: View {
     }
 }
 
-/// Tarjeta principal de Zori descansando
-private struct ZoriRestingCard: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            // Ilustración visual de Zori descansando
-            ZStack {
-                Circle()
-                    .fill(HogarGoColors.brandOrangeContainer.opacity(0.4))
-                    .frame(width: 140, height: 140)
-
-                VStack(spacing: 4) {
-                    Text("🦊")
-                        .font(.system(size: 72))
-                    Text("💤")
-                        .font(.system(size: 20))
-                        .offset(x: 35, y: -25)
-                }
-            }
-            .padding(.top, 8)
-
-            VStack(spacing: 6) {
-                Text("Zori está descansando.")
-                    .font(.system(size: 19, weight: .bold, design: .rounded))
-                    .foregroundStyle(HogarGoColors.primaryText)
-
-                Text("¡Completa tareas para despertar a Zori y ganar las recompensas de hoy!")
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(HogarGoColors.secondaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
-            }
-
-            // Botón interactivo "Empezar Día"
-            Button(action: {}) {
-                HStack(spacing: 6) {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 11))
-                    Text("Empezar Día")
-                        .font(.system(size: 14, weight: .bold))
-                }
-                .foregroundStyle(HogarGoColors.primaryText)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 16)
-            }
-            .buttonStyle(.plain)
-            .padding(.bottom, 6)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(16)
-        .background(HogarGoColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(HogarGoColors.borderSubtle, lineWidth: 1)
-        )
-    }
-}
-
 /// Tarjeta de próxima tarea pendiente
 private struct NextTaskCard: View {
     let task: HouseholdTask?
@@ -354,59 +304,6 @@ private struct NextTaskCard: View {
         case .general: return "GENERAL"
         case .cleaning: return "LIMPIEZA"
         }
-    }
-}
-
-/// Tarjeta de meta de ahorro
-private struct SavingsGoalCard: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "airplane")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(HogarGoColors.primaryText)
-                    Text("Fondo de Vacaciones")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundStyle(HogarGoColors.primaryText)
-                }
-                Spacer()
-                Text("65%")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(HogarGoColors.primaryText)
-            }
-
-            // Barra de progreso
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(HogarGoColors.surfaceContainer)
-                        .frame(height: 8)
-
-                    Capsule()
-                        .fill(HogarGoColors.brandOrange)
-                        .frame(width: proxy.size.width * 0.65, height: 8)
-                }
-            }
-            .frame(height: 8)
-
-            HStack {
-                Text("$650 ahorrado")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(HogarGoColors.secondaryText)
-                Spacer()
-                Text("Meta: $1000")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(HogarGoColors.secondaryText)
-            }
-        }
-        .padding(16)
-        .background(HogarGoColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(HogarGoColors.borderSubtle, lineWidth: 1)
-        )
     }
 }
 
@@ -559,79 +456,5 @@ private struct MoreBottomSheet: View {
         }
         .padding(.horizontal, 20)
         .background(HogarGoColors.background.ignoresSafeArea())
-    }
-}
-
-// MARK: - Modales rápidos auxiliares para Accesos Rápidos
-private struct QuickAddExpenseSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var desc = ""
-    @State private var amount = ""
-
-    var body: some View {
-        VStack(spacing: 20) {
-            HStack {
-                Button("Cancelar") { dismiss() }
-                    .foregroundStyle(HogarGoColors.secondaryText)
-                Spacer()
-                Text("Añadir Gasto")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(HogarGoColors.primaryText)
-                Spacer()
-                Button("Guardar") { dismiss() }
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(HogarGoColors.brandOrangeDeep)
-            }
-            .padding(.top, 16)
-
-            VStack(spacing: 14) {
-                TextField("Descripción (ej. Comestibles)", text: $desc)
-                    .padding(14)
-                    .background(HogarGoColors.surfaceContainerLow)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-
-                TextField("Monto (ej. 25.50)", text: $amount)
-                    .keyboardType(.decimalPad)
-                    .padding(14)
-                    .background(HogarGoColors.surfaceContainerLow)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-
-            Spacer()
-        }
-        .padding(20)
-        .background(HogarGoColors.background)
-    }
-}
-
-private struct QuickAddEventSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var title = ""
-
-    var body: some View {
-        VStack(spacing: 20) {
-            HStack {
-                Button("Cancelar") { dismiss() }
-                    .foregroundStyle(HogarGoColors.secondaryText)
-                Spacer()
-                Text("Nuevo Evento")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(HogarGoColors.primaryText)
-                Spacer()
-                Button("Guardar") { dismiss() }
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(HogarGoColors.brandOrangeDeep)
-            }
-            .padding(.top, 16)
-
-            TextField("Título del evento (ej. Cena familiar)", text: $title)
-                .padding(14)
-                .background(HogarGoColors.surfaceContainerLow)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-
-            Spacer()
-        }
-        .padding(20)
-        .background(HogarGoColors.background)
     }
 }
