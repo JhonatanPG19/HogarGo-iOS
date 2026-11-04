@@ -193,6 +193,8 @@ enum HogarGoSchema {
         HouseholdTask.self,
         Expense.self,
         SavingsGoal.self,
+        PetState.self,
+        WardrobeItem.self,
     ]
 }
 
