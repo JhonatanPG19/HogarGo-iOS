@@ -116,10 +116,3 @@ struct AccessSheet<Content: View, Footer: View>: View {
         .hogarToast()
     }
 }
-
-extension AccessSheet where Footer == EmptyView {
-    /// Hoja sin botón fijo (los botones van dentro del contenido).
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.init(title: title, content: content, footer: { EmptyView() })
-    }
-}

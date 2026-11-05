@@ -35,6 +35,7 @@ struct ChangeNameView: View {
                 .foregroundStyle(HogarGoColors.secondaryText)
             HogarTextField(label: L10n.newName, placeholder: member.name, text: $newName,
                            error: liveError ?? error?.message, help: L10n.nameOnlyHere)
+        } footer: {
             HogarPrimaryButton(title: L10n.save, isEnabled: canSave) {
                 do {
                     try appState.repository.changeMyName(memberId: member.id, newName: newName)
@@ -99,6 +100,7 @@ struct ChangeRecoveryUserView: View {
                            kind: .recoveryUser, error: newError)
             HogarTextField(label: L10n.recoveryRepeat, placeholder: "", text: $repeatNew,
                            kind: .recoveryUser, error: repeatError ?? error?.message)
+        } footer: {
             HogarPrimaryButton(title: L10n.save, isEnabled: canSave) {
                 do {
                     try appState.repository.changeRecoveryUser(
@@ -131,6 +133,7 @@ struct RenameHouseholdView: View {
         AccessSheet(title: L10n.renameHome) {
             HogarTextField(label: L10n.homeName, placeholder: household.name, text: $name,
                            error: error?.message)
+        } footer: {
             HogarPrimaryButton(title: L10n.save, isEnabled: !name.trimmed.isEmpty && name.trimmed != household.name) {
                 do {
                     try appState.repository.renameHousehold(actorId: actorId, householdId: household.id, newName: name)
