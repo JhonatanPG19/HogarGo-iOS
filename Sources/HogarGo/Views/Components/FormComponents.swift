@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 /// Tipo de teclado para los campos de los formularios de hogar.
 enum HogarFieldKind {
@@ -96,7 +98,9 @@ struct HouseholdCodeBadge: View {
                 .font(.system(size: 18, weight: .bold, design: .monospaced))
                 .foregroundStyle(HogarGoColors.primaryText)
             Button {
+                #if canImport(UIKit)
                 UIPasteboard.general.string = HouseholdCode.format(code)
+                #endif
                 appState.showToast(L10n.copied)
             } label: {
                 Image(systemName: "doc.on.doc")

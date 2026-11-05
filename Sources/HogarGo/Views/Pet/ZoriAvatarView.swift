@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 /// Zorro Zori con los objetos puestos. Los objetos se colocan con fracciones del tamaño del avatar.
 struct ZoriAvatarView: View {
@@ -35,9 +37,11 @@ struct ZoriAvatarView: View {
     /// El PNG vive en Resources (no en un catálogo de assets), así que `Image(_:bundle:)` no lo encuentra:
     /// se carga con `UIImage(named:in:)` desde el bundle del paquete.
     private var foxImage: Image {
+        #if canImport(UIKit)
         if let ui = UIImage(named: "img_zori_fox", in: Bundle.module, with: nil) {
             return Image(uiImage: ui)
         }
+        #endif
         return Image(systemName: "pawprint.fill")
     }
 
