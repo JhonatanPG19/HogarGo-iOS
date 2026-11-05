@@ -29,6 +29,7 @@ extension L10n {
     static var calendarDeleteEvent: String { tr("Eliminar evento", "Delete event") }
     static var calendarBillsDue: String { tr("Vencimiento de Facturas", "Bills Due") }
     static var calendarDueToday: String { tr("¡Vence Hoy!", "Due Today!") }
+    static var calendarOverdue: String { tr("Vencida", "Overdue") }
     static var calendarAddBill: String { tr("Nueva Factura", "New Bill") }
     static var calendarBillNameLabel: String { tr("Nombre", "Name") }
     static var calendarBillNameHint: String { tr("Ej: Internet", "E.g.: Internet") }

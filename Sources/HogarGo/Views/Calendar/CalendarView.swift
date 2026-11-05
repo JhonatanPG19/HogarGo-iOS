@@ -404,8 +404,9 @@ private struct CalendarContent: View {
     }
 
     private func billRow(_ bill: Bill, showDate: Bool) -> some View {
-        // Igual que Android: también las vencidas dicen "¡Vence Hoy!" mientras no estén pagadas.
-        let due = !bill.paid && bill.dueDateISO <= todayISO
+        // "¡Vence Hoy!" solo el día del vencimiento; después de esa fecha dice "Vencida".
+        let dueToday = !bill.paid && bill.dueDateISO == todayISO
+        let overdue = !bill.paid && bill.dueDateISO < todayISO
 
         return HStack(spacing: 10) {
             checkbox(checked: bill.paid) {
@@ -416,8 +417,8 @@ private struct CalendarContent: View {
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(HogarGoColors.primaryText)
                     .strikethrough(bill.paid)
-                if due {
-                    Text(L10n.calendarDueToday)
+                if dueToday || overdue {
+                    Text(dueToday ? L10n.calendarDueToday : L10n.calendarOverdue)
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(HogarGoColors.alertRed)
                 } else if showDate {
