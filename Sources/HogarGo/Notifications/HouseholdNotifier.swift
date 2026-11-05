@@ -21,23 +21,42 @@ final class HouseholdNotifier: NSObject, UNUserNotificationCenterDelegate {
         center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
     }
 
-    /// Programa o actualiza el recordatorio diario de racha a las 20:00.
-    func updateStreakReminder(hasPendingTasks: Bool, isStreakAtRisk: Bool) {
+    /// Quita el recordatorio de racha (al cerrar sesión o salir del hogar).
+    func cancelStreakReminder() {
         center.removePendingNotificationRequests(withIdentifiers: [Self.streakReminderId])
+    }
+
+    /// Programa o actualiza el recordatorio de racha a las 20:00.
+    /// Si hoy ya se completó una tarea, no suena hoy: se programa solo para mañana.
+    func updateStreakReminder(hasPendingTasks: Bool, isStreakAtRisk: Bool, hasCompletedToday: Bool = false) {
+        cancelStreakReminder()
         guard hasPendingTasks || isStreakAtRisk else { return }
 
-        var dateComponents = DateComponents()
-        dateComponents.hour = 20
-        dateComponents.minute = 0
-
         let content = UNMutableNotificationContent()
-        content.title = "¡Mantén tu racha en HogarGo! 🔥"
+        content.title = L10n.tr("¡Mantén tu racha en HogarGo! 🔥", "Keep your HogarGo streak going! 🔥")
         content.body = isStreakAtRisk
-            ? "Tu racha diaria está en riesgo. Completa una tarea antes de que termine el día."
-            : "Tienes tareas pendientes en el hogar. ¡Haz que tu casa brille hoy!"
+            ? L10n.tr("Tu racha diaria está en riesgo. Completa una tarea antes de que termine el día.",
+                      "Your daily streak is at risk. Complete a task before the day ends.")
+            : L10n.tr("Tienes tareas pendientes en el hogar. ¡Haz que tu casa brille hoy!",
+                      "You have pending tasks at home. Make your home shine today!")
         content.sound = .default
 
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let trigger: UNCalendarNotificationTrigger
+        if hasCompletedToday {
+            // Un solo aviso, mañana a las 20:00 (se reprograma al volver a abrir la app).
+            let calendar = Calendar.current
+            let tomorrow = calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            var tomorrowAt20 = calendar.dateComponents([.year, .month, .day], from: tomorrow)
+            tomorrowAt20.hour = 20
+            tomorrowAt20.minute = 0
+            trigger = UNCalendarNotificationTrigger(dateMatching: tomorrowAt20, repeats: false)
+        } else {
+            var dailyAt20 = DateComponents()
+            dailyAt20.hour = 20
+            dailyAt20.minute = 0
+            trigger = UNCalendarNotificationTrigger(dateMatching: dailyAt20, repeats: true)
+        }
+
         let request = UNNotificationRequest(identifier: Self.streakReminderId, content: content, trigger: trigger)
         center.add(request)
     }

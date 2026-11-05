@@ -92,6 +92,8 @@ final class AppState {
 
     /// Cierra la sesión del dispositivo. Sigues siendo integrante y los datos se conservan.
     func logout() {
+        // Sin sesión no debe sonar el recordatorio de racha (también aplica al salir del hogar).
+        notifier.cancelStreakReminder()
         session.clear()
         phase = .welcome
     }
@@ -110,8 +112,12 @@ final class AppState {
     func syncStreakReminder() {
         guard let householdId else { return }
         let hasPending = taskRepository.nextPendingTask(householdId: householdId) != nil
-        let atRisk = currentStreak.isAtRisk
-        notifier.updateStreakReminder(hasPendingTasks: hasPending, isStreakAtRisk: atRisk)
+        let streak = currentStreak
+        notifier.updateStreakReminder(
+            hasPendingTasks: hasPending,
+            isStreakAtRisk: streak.isAtRisk,
+            hasCompletedToday: streak.hasCompletedToday
+        )
     }
 
     // MARK: - Cambios en la base
