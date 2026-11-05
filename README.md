@@ -1,40 +1,49 @@
 # HogarGo-iOS
 
-Aplicación iOS del proyecto HogarGo, desarrollada con SwiftUI y preparada para trabajar con xtool desde un entorno Windows con WSL2.
-
-## Objetivo
-
-Construir la versión iOS de HogarGo a partir del proyecto existente para Android, manteniendo una estructura organizada que facilite el desarrollo colaborativo.
+Aplicación iOS de HogarGo, la versión de la app Android para organizar las tareas del hogar y las finanzas de la familia con la mascota Zori. Está hecha con SwiftUI y SwiftData, y se puede preparar con xtool desde Windows con WSL2 o con Xcode en un Mac.
 
 ## Tecnologías
 
-- Swift
-- SwiftUI
-- xtool
-- Git y GitHub
+- Swift 6 y SwiftUI (iOS 17)
+- SwiftData para guardar los datos en el dispositivo
+- xtool, Git y GitHub
+- Textos en español e inglés con `L10n.tr(es, en)` (sin `.xcstrings`)
 
-## Estructura actual
+## Pantallas
+
+| Pestaña | Contenido |
+|---|---|
+| Inicio | Saludo, racha, consejo del día, Zori, siguiente tarea, meta de ahorro y accesos rápidos |
+| Tareas | Lista de tareas del hogar, racha y alta de tareas nuevas |
+| Finanzas | Gastos, metas de ahorro con frasco, totales del mes y desglose |
+| Mascota | Zori: cuidado con cooldown, nivel, monedas y armario |
+| Calendario | Mes con puntos, detalle del día, próximos eventos y facturas |
+
+Además: bienvenida, crear o unirse a un hogar, iniciar sesión con código y usuario de recuperación, perfil de integrantes y "Acerca de".
+
+## Estructura
 
 ```text
-HogarGo/
-├── Package.swift
-├── xtool.yml
-├── .gitignore
-├── README.md
-└── Sources/
-    └── HogarGo/
-        ├── HogarGoApp.swift
-        └── ContentView.swift
+Sources/HogarGo/
+├── App/            AppState, RootView, MainTabsView
+├── Data/           Modelos SwiftData y repositorios (hogar, tareas, Finance/, Pet/, Calendar/)
+├── Localization/   L10n y textos por módulo (L10n+Finance, +Pet, +Calendar, +Tasks)
+├── Networking/     Consejo del día
+├── Notifications/  Avisos del hogar y recordatorio de racha (20:00)
+├── Resources/      Imagen de Zori
+├── Theme/          Colores
+└── Views/          Pantallas por módulo
 ```
 
-## Estado del proyecto
+Todos los datos llevan `householdId`: nada es global. Las fechas se guardan como texto ISO `yyyy-MM-dd`.
 
-El proyecto se encuentra en su fase inicial. La estructura base de SwiftUI está creada y las funcionalidades se desarrollarán progresivamente.
+## Compilar
+
+- **Mac con Xcode:** abre el paquete o usa `xtool dev`. Es la vía recomendada, porque SwiftData (`@Model`, `@Query`) no compila con xtool en Linux/WSL.
+- **Windows con WSL2:** `./build.sh` sincroniza el proyecto a `~/Developer/HogarGo` y compila ahí (solo sirve para revisar lo que no usa macros de SwiftData).
+
+El identificador de la app es `co.edu.aplimovil.HogarGo` (`xtool.yml`).
 
 ## Colaboración
 
-El repositorio utiliza `main` como rama principal de integración. Cada integrante trabajará en su propia rama y coordinará la integración de cambios con el equipo.
-
-## Ejecución
-
-La compilación y ejecución se realizarán mediante xtool, de acuerdo con la configuración del entorno de desarrollo.
+`main` es la rama de integración. Cada integrante trabaja en su propia rama y los commits usan prefijos convencionales (`feat:`, `fix:`, `chore:`, `docs:`).

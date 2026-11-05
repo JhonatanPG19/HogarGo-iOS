@@ -85,7 +85,6 @@ final class AppState {
         session.save(.init(memberId: member.id, householdId: member.householdId))
         phase = .signedIn(memberId: member.id, householdId: member.householdId)
         notifier.requestAuthorization()
-        taskRepository.seedInitialTasksIfNeeded(householdId: member.householdId)
         deliverPendingNotices()
         syncStreakReminder()
     }
