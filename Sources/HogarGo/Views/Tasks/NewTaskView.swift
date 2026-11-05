@@ -36,7 +36,7 @@ struct NewTaskView: View {
 
                 Spacer()
 
-                Text("Nueva Tarea")
+                Text(L10n.tr("Nueva Tarea", "New Task"))
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundStyle(HogarGoColors.primaryText)
 
@@ -60,13 +60,13 @@ struct NewTaskView: View {
                             .padding(.horizontal, 4)
                     }
 
-                    // 2. Tarjeta "¿Qué hay que hacer?"
+                    // 2. Tarjeta L10n.tr("¿Qué hay que hacer?", "What needs to be done?")
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("¿Qué hay que hacer?")
+                        Text(L10n.tr("¿Qué hay que hacer?", "What needs to be done?"))
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundStyle(HogarGoColors.primaryText)
 
-                        TextField("Ej: Lavar los platos", text: $taskTitle)
+                        TextField(L10n.tr("Ej: Lavar los platos", "E.g.: Wash the dishes"), text: $taskTitle)
                             .font(.system(size: 16))
                             .padding(.horizontal, 14)
                             .padding(.vertical, 14)
@@ -87,7 +87,7 @@ struct NewTaskView: View {
 
                     // 3. Categoría
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Categoría")
+                        Text(L10n.tr("Categoría", "Category"))
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundStyle(HogarGoColors.primaryText)
 
@@ -100,7 +100,7 @@ struct NewTaskView: View {
                                     VStack(spacing: 6) {
                                         Image(systemName: cat.iconName)
                                             .font(.system(size: 18, weight: .semibold))
-                                        Text(cat.rawValue)
+                                        Text(cat.displayName)
                                             .font(.system(size: 10, weight: .heavy, design: .rounded))
                                     }
                                     .foregroundStyle(isSelected ? HogarGoColors.primaryText : HogarGoColors.secondaryText)
@@ -125,7 +125,7 @@ struct NewTaskView: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "calendar")
                                     .font(.system(size: 13))
-                                Text("Fecha")
+                                Text(L10n.tr("Fecha", "Date"))
                                     .font(.system(size: 13, weight: .bold, design: .rounded))
                             }
                             .foregroundStyle(HogarGoColors.primaryText)
@@ -163,7 +163,7 @@ struct NewTaskView: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "clock")
                                     .font(.system(size: 13))
-                                Text("Hora")
+                                Text(L10n.tr("Hora", "Time"))
                                     .font(.system(size: 13, weight: .bold, design: .rounded))
                             }
                             .foregroundStyle(HogarGoColors.primaryText)
@@ -201,7 +201,7 @@ struct NewTaskView: View {
                     // 5. Recompensa para Zori
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("Recompensa para Zori")
+                            Text(L10n.tr("Recompensa para Zori", "Reward for Zori"))
                                 .font(.system(size: 15, weight: .bold, design: .rounded))
                                 .foregroundStyle(HogarGoColors.primaryText)
                             Spacer()
@@ -215,7 +215,7 @@ struct NewTaskView: View {
 
                         HStack {
                             Spacer()
-                            Text("+\(Int(coinReward)) Monedas Zori")
+                            Text(L10n.tr("+\(Int(coinReward)) Monedas Zori", "+\(Int(coinReward)) Zori Coins"))
                                 .font(.system(size: 15, weight: .bold, design: .rounded))
                                 .foregroundStyle(HogarGoColors.primaryText)
                             Spacer()
@@ -231,7 +231,7 @@ struct NewTaskView: View {
 
                     // 6. ¿Quién lo hará?
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("¿Quién lo hará?")
+                        Text(L10n.tr("¿Quién lo hará?", "Who will do it?"))
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundStyle(HogarGoColors.primaryText)
 
@@ -266,7 +266,7 @@ struct NewTaskView: View {
                                                 .foregroundStyle(HogarGoColors.primaryText)
                                         }
 
-                                        Text("Cualquiera")
+                                        Text(L10n.tr("Cualquiera", "Anyone"))
                                             .font(.system(size: 12, weight: .medium, design: .rounded))
                                             .foregroundStyle(HogarGoColors.primaryText)
                                     }
@@ -283,14 +283,14 @@ struct NewTaskView: View {
                 .padding(.top, 12)
             }
 
-            // 7. Botón "Crear Misión" al pie
+            // 7. Botón L10n.tr("Crear Misión", "Create Mission") al pie
             Button {
                 saveTask()
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 17, weight: .bold))
-                    Text("Crear Misión")
+                    Text(L10n.tr("Crear Misión", "Create Mission"))
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                 }
                 .foregroundStyle(Color.white)
@@ -316,12 +316,12 @@ struct NewTaskView: View {
     private func saveTask() {
         let title = taskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else {
-            errorMessage = "Ingresa el nombre o descripción de la tarea."
+            errorMessage = L10n.tr("Ingresa el nombre o descripción de la tarea.", "Enter the name or description of the task.")
             return
         }
 
         guard let householdId = appState.householdId else {
-            errorMessage = "No hay un hogar activo seleccionado."
+            errorMessage = L10n.tr("No hay un hogar activo seleccionado.", "There is no active home selected.")
             return
         }
 
@@ -359,6 +359,15 @@ enum TaskCategoryOption: String, CaseIterable, Identifiable {
     case cleaning = "LIMPIEZA"
 
     var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .kitchen: return L10n.tr("COCINA", "KITCHEN")
+        case .garden: return L10n.tr("JARDÍN", "GARDEN")
+        case .general: return L10n.tr("GENERAL", "GENERAL")
+        case .cleaning: return L10n.tr("LIMPIEZA", "CLEANING")
+        }
+    }
 
     var iconName: String {
         switch self {

@@ -19,7 +19,7 @@ struct AboutView: View {
 
                 Spacer()
 
-                Text("Acerca de HogarGo")
+                Text(L10n.tr("Acerca de HogarGo", "About HogarGo"))
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(HogarGoColors.primaryText)
 
@@ -49,14 +49,14 @@ struct AboutView: View {
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundStyle(HogarGoColors.primaryText)
 
-                        Text("Versión 1.0")
+                        Text(L10n.tr("Versión 1.0", "Version 1.0"))
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(HogarGoColors.secondaryText)
                     }
                     .padding(.top, 10)
 
                     // Descripción
-                    Text("HogarGo convierte las tareas del hogar y las finanzas familiares en un juego en equipo. Cada familia tiene su propio hogar: sus integrantes reparten y completan tareas, cuidan a Zori (el zorro mascota) y juntos alcanzan sus metas de ahorro.")
+                    Text(L10n.tr("HogarGo convierte las tareas del hogar y las finanzas familiares en un juego en equipo. Cada familia tiene su propio hogar: sus integrantes reparten y completan tareas, cuidan a Zori (el zorro mascota) y juntos alcanzan sus metas de ahorro.", "HogarGo turns household chores and family finances into a team game. Each family has its own home: members share and complete tasks, take care of Zori (the fox pet) and reach their savings goals together."))
                         .font(.system(size: 14, weight: .regular))
                         .foregroundStyle(Color(red: 45/255, green: 35/255, blue: 30/255))
                         .multilineTextAlignment(.center)
@@ -64,16 +64,16 @@ struct AboutView: View {
 
                     // Sección: ¿Qué puedes hacer?
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("¿QUÉ PUEDES HACER?")
+                        Text(L10n.tr("¿QUÉ PUEDES HACER?", "WHAT CAN YOU DO?"))
                             .font(.system(size: 12, weight: .heavy, design: .rounded))
                             .foregroundStyle(HogarGoColors.primaryText)
                             .tracking(0.5)
 
-                        FeatureItemRow(icon: "house.fill", title: "Tu hogar", description: "Crea un hogar o únete con un código; el administrador acepta a los nuevos integrantes.")
-                        FeatureItemRow(icon: "checklist", title: "Tareas y racha", description: "Reparte tareas, complétalas para ganar monedas y mantén tu racha diaria.")
-                        FeatureItemRow(icon: "banknote.fill", title: "Finanzas familiares", description: "Registra gastos por categoría y crea varias metas de ahorro para la familia.")
-                        FeatureItemRow(icon: "pawprint.fill", title: "Mascota Zori", description: "Aliméntalo, juega con él y compra decoraciones en el armario con tus monedas.")
-                        FeatureItemRow(icon: "calendar", title: "Calendario", description: "Organiza eventos y mantén al día las fechas de pago de tus facturas.")
+                        FeatureItemRow(icon: "house.fill", title: L10n.tr("Tu hogar", "Your home"), description: L10n.tr("Crea un hogar o únete con un código; el administrador acepta a los nuevos integrantes.", "Create a home or join with a code; the admin accepts new members."))
+                        FeatureItemRow(icon: "checklist", title: L10n.tr("Tareas y racha", "Tasks and streak"), description: L10n.tr("Reparte tareas, complétalas para ganar monedas y mantén tu racha diaria.", "Share tasks, complete them to earn coins and keep your daily streak."))
+                        FeatureItemRow(icon: "banknote.fill", title: L10n.tr("Finanzas familiares", "Family finances"), description: L10n.tr("Registra gastos por categoría y crea varias metas de ahorro para la familia.", "Log expenses by category and create several savings goals for the family."))
+                        FeatureItemRow(icon: "pawprint.fill", title: L10n.tr("Mascota Zori", "Pet Zori"), description: L10n.tr("Aliméntalo, juega con él y compra decoraciones en el armario con tus monedas.", "Feed it, play with it and buy decorations in the wardrobe with your coins."))
+                        FeatureItemRow(icon: "calendar", title: L10n.tr("Calendario", "Calendar"), description: L10n.tr("Organiza eventos y mantén al día las fechas de pago de tus facturas.", "Organize events and keep your bill due dates up to date."))
                     }
                     .padding(16)
                     .background(HogarGoColors.surface)
@@ -85,12 +85,12 @@ struct AboutView: View {
 
                     // Sección: Créditos del Equipo
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("CRÉDITOS DEL EQUIPO")
+                        Text(L10n.tr("CRÉDITOS DEL EQUIPO", "TEAM CREDITS"))
                             .font(.system(size: 12, weight: .heavy, design: .rounded))
                             .foregroundStyle(HogarGoColors.primaryText)
                             .tracking(0.5)
 
-                        Text("Proyecto desarrollado para el curso de Desarrollo de Aplicaciones Móviles:")
+                        Text(L10n.tr("Proyecto desarrollado para el curso de Desarrollo de Aplicaciones Móviles:", "Project built for the Mobile Application Development course:"))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(HogarGoColors.secondaryText)
 
@@ -98,19 +98,19 @@ struct AboutView: View {
                             StudentCreditRow(
                                 initial: "J",
                                 name: "Jhonatan Palacios Gomez",
-                                role: "Tareas, Inicio, notificaciones y consejos en línea (API)"
+                                role: L10n.tr("Tareas, Inicio, notificaciones y consejos en línea (API)", "Tasks, Home, notifications and online tips (API)")
                             )
 
                             StudentCreditRow(
                                 initial: "N",
                                 name: "Nelson Rodrigo López Vidales",
-                                role: "Finanzas, Mascota y Calendario"
+                                role: L10n.tr("Finanzas, Mascota y Calendario", "Finance, Pet and Calendar")
                             )
 
                             StudentCreditRow(
                                 initial: "I",
                                 name: "Dana Isabella Romero Núñez",
-                                role: "Inicio de sesión y creación del hogar"
+                                role: L10n.tr("Inicio de sesión y creación del hogar", "Sign-in and home creation")
                             )
                         }
                     }
@@ -123,7 +123,7 @@ struct AboutView: View {
                     )
 
                     // Pie de página
-                    Text("Hecho con ❤️ para el curso de Aplicaciones Móviles.")
+                    Text(L10n.tr("Hecho con ❤️ para el curso de Aplicaciones Móviles.", "Made with ❤️ for the Mobile Applications course."))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(HogarGoColors.secondaryText)
                         .padding(.top, 4)

@@ -44,11 +44,11 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // 1. Saludo y racha diaria
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("¡Hola, \(appState.currentMember?.name ?? "Familia")!")
+                    Text(L10n.homeGreeting(appState.currentMember?.name))
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
 
-                    Text("Hagamos que hoy sea un día acogedor.")
+                    Text(L10n.tr("Hagamos que hoy sea un día acogedor.", "Let's make today a cozy day."))
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(HogarGoColors.secondaryText)
 
@@ -64,10 +64,10 @@ struct HomeView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Energía Diaria")
+                            Text(L10n.tr("Energía Diaria", "Daily Energy"))
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(HogarGoColors.primaryText)
-                            Text("Racha de \(streak.days)/7 días\(streak.isAtRisk ? " ⚠️" : "")")
+                            Text(L10n.homeStreak(streak.days, atRisk: streak.isAtRisk))
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(HogarGoColors.secondaryText)
                         }
@@ -160,8 +160,8 @@ struct HomeView: View {
                 AboutView()
             }
         }
-        .alert("Integrantes del Hogar", isPresented: $showMembersDialog) {
-            Button("Cerrar", role: .cancel) {}
+        .alert(L10n.tr("Integrantes del Hogar", "Home Members"), isPresented: $showMembersDialog) {
+            Button(L10n.close, role: .cancel) {}
         } message: {
             Text(membersSummary)
         }
@@ -176,10 +176,10 @@ struct HomeView: View {
     private var membersSummary: String {
         let members = appState.householdId.map(appState.repository.approvedMembers(householdId:)) ?? []
         guard !members.isEmpty else {
-            return "No hay integrantes registrados en este hogar todavía."
+            return L10n.tr("No hay integrantes registrados en este hogar todavía.", "There are no members registered in this home yet.")
         }
-        let lines = members.map { "• \($0.name)\($0.isAdmin ? " (Admin)" : "")" }
-        return (["Miembros registrados en la familia:"] + lines).joined(separator: "\n")
+        let lines = members.map { "• \($0.name)\($0.isAdmin ? " (" + L10n.adminBadge + ")" : "")" }
+        return ([L10n.tr("Miembros registrados en la familia:", "Registered family members:")] + lines).joined(separator: "\n")
     }
 }
 
@@ -198,7 +198,7 @@ private struct DailyAdviceCard: View {
                     Image(systemName: "sparkles")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(HogarGoColors.brandOrangeDeep)
-                    Text("CONSEJO DEL DÍA")
+                    Text(L10n.tr("CONSEJO DEL DÍA", "DAILY TIP"))
                         .font(.system(size: 11, weight: .heavy, design: .rounded))
                         .foregroundStyle(HogarGoColors.primaryText)
                         .tracking(0.5)
@@ -247,7 +247,7 @@ private struct NextTaskCard: View {
                     Image(systemName: "paintbrush.pointed.fill")
                         .font(.system(size: 15))
                         .foregroundStyle(HogarGoColors.primaryText)
-                    Text("Siguiente Tarea")
+                    Text(L10n.tr("Siguiente Tarea", "Next Task"))
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundStyle(HogarGoColors.primaryText)
                 }
@@ -291,7 +291,7 @@ private struct NextTaskCard: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 24))
                         .foregroundStyle(HogarGoColors.brandOrangeDeep)
-                    Text("¡Todo al día! No hay tareas pendientes.")
+                    Text(L10n.tr("¡Todo al día! No hay tareas pendientes.", "All caught up! No pending tasks."))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(HogarGoColors.secondaryText)
                     Spacer()
@@ -312,10 +312,10 @@ private struct NextTaskCard: View {
 
     private func categoryLabel(_ cat: TaskCategory) -> String {
         switch cat {
-        case .kitchen: return "COCINA"
-        case .garden: return "JARDÍN"
-        case .general: return "GENERAL"
-        case .cleaning: return "LIMPIEZA"
+        case .kitchen: return L10n.tr("COCINA", "KITCHEN")
+        case .garden: return L10n.tr("JARDÍN", "GARDEN")
+        case .general: return L10n.tr("GENERAL", "GENERAL")
+        case .cleaning: return L10n.tr("LIMPIEZA", "CLEANING")
         }
     }
 }
@@ -329,10 +329,10 @@ private struct QuickActionsGrid: View {
 
     var body: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
-            QuickActionButton(title: "New Task", icon: "checklist", action: onNewTask)
-            QuickActionButton(title: "Add Expense", icon: "newspaper", action: onAddExpense)
-            QuickActionButton(title: "Event", icon: "calendar", action: onEvent)
-            QuickActionButton(title: "More", icon: "ellipsis", action: onMore)
+            QuickActionButton(title: L10n.tr("Nueva Tarea", "New Task"), icon: "checklist", action: onNewTask)
+            QuickActionButton(title: L10n.tr("Añadir Gasto", "Add Expense"), icon: "newspaper", action: onAddExpense)
+            QuickActionButton(title: L10n.tr("Evento", "Event"), icon: "calendar", action: onEvent)
+            QuickActionButton(title: L10n.tr("Más", "More"), icon: "ellipsis", action: onMore)
         }
     }
 }
@@ -391,7 +391,7 @@ private struct MoreBottomSheet: View {
             .padding(.top, 10)
 
             // Título "More"
-            Text("More")
+            Text(L10n.tr("Más", "More"))
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundStyle(HogarGoColors.primaryText)
                 .padding(.horizontal, 4)
@@ -411,10 +411,10 @@ private struct MoreBottomSheet: View {
                         }
 
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("About HogarGo")
+                            Text(L10n.tr("Acerca de HogarGo", "About HogarGo"))
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
-                            Text("App description and team credits")
+                            Text(L10n.tr("Descripción de la app y créditos del equipo", "App description and team credits"))
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(HogarGoColors.secondaryText)
                         }
@@ -444,10 +444,10 @@ private struct MoreBottomSheet: View {
                         }
 
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Integrantes del Hogar")
+                            Text(L10n.tr("Integrantes del Hogar", "Home Members"))
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
-                            Text("Ver los miembros registrados de la familia")
+                            Text(L10n.tr("Ver los miembros registrados de la familia", "See the family members who are registered"))
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(HogarGoColors.secondaryText)
                         }

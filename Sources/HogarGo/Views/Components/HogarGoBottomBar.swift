@@ -9,6 +9,16 @@ enum HogarGoTab: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    var title: String {
+        switch self {
+        case .home: return L10n.tr("Inicio", "Home")
+        case .tasks: return L10n.tr("Tareas", "Tasks")
+        case .finance: return L10n.tr("Finanzas", "Finance")
+        case .pet: return L10n.tr("Mascota", "Pet")
+        case .calendar: return L10n.tr("Calendario", "Calendar")
+        }
+    }
+
     var iconName: String {
         switch self {
         case .home: return "house.fill"
@@ -35,7 +45,7 @@ struct HogarGoBottomBar: View {
                     VStack(spacing: 4) {
                         Image(systemName: tab.iconName)
                             .font(.system(size: 19, weight: isSelected ? .bold : .medium))
-                        Text(tab.rawValue)
+                        Text(tab.title)
                             .font(.system(size: 11, weight: isSelected ? .bold : .medium))
                     }
                     .foregroundStyle(isSelected ? HogarGoColors.primaryText : HogarGoColors.secondaryText)

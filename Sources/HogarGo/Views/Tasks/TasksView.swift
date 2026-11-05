@@ -29,11 +29,11 @@ struct TasksView: View {
             VStack(alignment: .leading, spacing: 18) {
                 // 1. Título y subtítulo
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Tareas")
+                    Text(L10n.tr("Tareas", "Tasks"))
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(HogarGoColors.primaryText)
 
-                    Text("Hagamos que el hogar brille hoy.")
+                    Text(L10n.tr("Hagamos que el hogar brille hoy.", "Let's make the home shine today."))
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(HogarGoColors.secondaryText)
                 }
@@ -47,10 +47,10 @@ struct TasksView: View {
                         Image(systemName: "checklist.checked")
                             .font(.system(size: 40))
                             .foregroundStyle(HogarGoColors.brandOrangeDeep.opacity(0.6))
-                        Text("No hay tareas pendientes")
+                        Text(L10n.tr("No hay tareas pendientes", "No pending tasks"))
                             .font(.system(size: 16, weight: .bold, design: .rounded))
                             .foregroundStyle(HogarGoColors.primaryText)
-                        Text("Crea una nueva misión desde el botón inferior.")
+                        Text(L10n.tr("Crea una nueva misión desde el botón inferior.", "Create a new mission with the button below."))
                             .font(.system(size: 13))
                             .foregroundStyle(HogarGoColors.secondaryText)
                     }
@@ -72,14 +72,14 @@ struct TasksView: View {
                     }
                 }
 
-                // 4. Botón punteado "Proponer Nueva Misión"
+                // 4. Botón punteado L10n.tr("Proponer Nueva Misión", "Propose a New Mission")
                 Button {
                     showNewTaskSheet = true
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "plus")
                             .font(.system(size: 14, weight: .bold))
-                        Text("Proponer Nueva Misión")
+                        Text(L10n.tr("Proponer Nueva Misión", "Propose a New Mission"))
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                     }
                     .foregroundStyle(HogarGoColors.primaryText)
@@ -132,12 +132,12 @@ private struct StreakBannerView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("RACHA ACTUAL")
+                Text(L10n.tr("RACHA ACTUAL", "CURRENT STREAK"))
                     .font(.system(size: 11, weight: .heavy, design: .rounded))
                     .foregroundStyle(HogarGoColors.primaryText)
                     .tracking(0.5)
 
-                Text(days == 1 ? "¡1 Día Activo!" : "¡\(days) Días Seguidos!\(isAtRisk ? " ⚠️" : "")")
+                Text(L10n.streakBanner(days, atRisk: isAtRisk))
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(HogarGoColors.primaryText)
             }
@@ -178,7 +178,7 @@ private struct TaskRowCard: View {
                         .foregroundStyle(task.completed ? HogarGoColors.secondaryText : Color(red: 34/255, green: 26/255, blue: 21/255))
 
                     if task.completed, let date = task.completedDate {
-                        Text("Completado (\(date))")
+                        Text(L10n.tr("Completado (\(date))", "Completed (\(date))"))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(HogarGoColors.secondaryText)
                     } else if let due = task.dueLabel {
@@ -201,7 +201,7 @@ private struct TaskRowCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "person.2")
                                 .font(.system(size: 12))
-                            Text("Sin asignar")
+                            Text(L10n.tr("Sin asignar", "Unassigned"))
                                 .font(.system(size: 13, weight: .medium))
                         }
                         .foregroundStyle(HogarGoColors.secondaryText)
@@ -239,7 +239,7 @@ private struct TaskRowCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "person.2")
                                 .font(.system(size: 11))
-                            Text("Sin asignar")
+                            Text(L10n.tr("Sin asignar", "Unassigned"))
                                 .font(.system(size: 11, weight: .semibold))
                         }
                         .foregroundStyle(HogarGoColors.secondaryText)
@@ -270,10 +270,10 @@ private struct TaskRowCard: View {
 
     private func categoryLabel(_ cat: TaskCategory) -> String {
         switch cat {
-        case .kitchen: return "COCINA"
-        case .garden: return "JARDÍN"
-        case .general: return "GENERAL"
-        case .cleaning: return "LIMPIEZA"
+        case .kitchen: return L10n.tr("COCINA", "KITCHEN")
+        case .garden: return L10n.tr("JARDÍN", "GARDEN")
+        case .general: return L10n.tr("GENERAL", "GENERAL")
+        case .cleaning: return L10n.tr("LIMPIEZA", "CLEANING")
         }
     }
 }
