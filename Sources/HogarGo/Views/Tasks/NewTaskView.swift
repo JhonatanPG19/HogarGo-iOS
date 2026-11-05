@@ -7,7 +7,7 @@ struct NewTaskView: View {
     // Campos del formulario
     @State private var taskTitle: String = ""
     @State private var selectedCategory: TaskCategoryOption = .kitchen
-    @State private var selectedDate: String = "Hoy"
+    @State private var selectedDate: TaskDateOption = .today
     @State private var selectedTime: String = "18:00"
     @State private var coinReward: Double = 15
     @State private var selectedAssigneeId: String? = nil
@@ -131,12 +131,12 @@ struct NewTaskView: View {
                             .foregroundStyle(HogarGoColors.primaryText)
 
                             Menu {
-                                Button("Hoy") { selectedDate = "Hoy" }
-                                Button("Mañana") { selectedDate = "Mañana" }
-                                Button("Fin de semana") { selectedDate = "Fin de semana" }
+                                ForEach(TaskDateOption.allCases) { option in
+                                    Button(option.label) { selectedDate = option }
+                                }
                             } label: {
                                 HStack {
-                                    Text(selectedDate)
+                                    Text(selectedDate.label)
                                         .font(.system(size: 15, weight: .medium))
                                     Spacer()
                                     Image(systemName: "chevron.down")
@@ -339,6 +339,7 @@ struct NewTaskView: View {
                 title: title,
                 category: cat,
                 dueTime: selectedTime,
+                dueDateISO: selectedDate.dateISO,
                 assigneeId: selectedAssigneeId,
                 coinReward: Int(coinReward)
             )

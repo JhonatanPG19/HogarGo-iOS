@@ -275,7 +275,7 @@ private struct NextTaskCard: View {
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
 
-                            Text("Para las \(task.dueTime ?? "18:00") • +\(task.coinReward) 🪙")
+                            Text("\(task.dueLabel ?? L10n.taskDueAt("18:00")) • +\(task.coinReward) 🪙")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(HogarGoColors.secondaryText)
                         }

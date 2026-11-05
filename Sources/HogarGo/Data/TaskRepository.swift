@@ -65,6 +65,7 @@ final class TaskRepository {
         title rawTitle: String,
         category: TaskCategory = .general,
         dueTime: String? = "18:00",
+        dueDateISO: String? = nil,
         assigneeId: String? = nil,
         coinReward: Int = 10
     ) throws -> HouseholdTask {
@@ -76,6 +77,7 @@ final class TaskRepository {
             title: title,
             category: category,
             dueTime: dueTime,
+            dueDateISO: dueDateISO,
             completed: false,
             completedDate: nil,
             assigneeId: assigneeId,

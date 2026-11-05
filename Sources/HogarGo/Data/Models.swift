@@ -135,6 +135,8 @@ final class HouseholdTask {
     var title: String
     var categoryRaw: String
     var dueTime: String?
+    /// Fecha límite ISO "yyyy-MM-dd" elegida en "Nueva Tarea". `nil` en tareas anteriores (cuenta como hoy).
+    var dueDateISO: String?
     var completed: Bool
     /// Fecha ISO "yyyy-MM-dd" en que se marcó como hecha. Necesaria para calcular rachas.
     var completedDate: String?
@@ -150,6 +152,7 @@ final class HouseholdTask {
         title: String,
         category: TaskCategory = .general,
         dueTime: String? = "18:00",
+        dueDateISO: String? = nil,
         completed: Bool = false,
         completedDate: String? = nil,
         assigneeId: String? = nil,
@@ -161,6 +164,7 @@ final class HouseholdTask {
         self.title = title
         self.categoryRaw = category.rawValue
         self.dueTime = dueTime
+        self.dueDateISO = dueDateISO
         self.completed = completed
         self.completedDate = completedDate
         self.assigneeId = assigneeId

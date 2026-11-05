@@ -181,11 +181,11 @@ private struct TaskRowCard: View {
                         Text("Completado (\(date))")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(HogarGoColors.secondaryText)
-                    } else if let due = task.dueTime {
+                    } else if let due = task.dueLabel {
                         HStack(spacing: 4) {
                             Image(systemName: "clock")
                                 .font(.system(size: 12))
-                            Text("Para las \(due)")
+                            Text(due)
                                 .font(.system(size: 13, weight: .medium))
                         }
                         .foregroundStyle(HogarGoColors.secondaryText)
@@ -234,6 +234,15 @@ private struct TaskRowCard: View {
                                     .foregroundStyle(HogarGoColors.primaryText.opacity(0.8))
                             }
                         }
+                    } else {
+                        // Antes nunca se veía: la hora ocupaba siempre el lugar del texto "sin asignar".
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.2")
+                                .font(.system(size: 11))
+                            Text("Sin asignar")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundStyle(HogarGoColors.secondaryText)
                     }
                 }
             }
