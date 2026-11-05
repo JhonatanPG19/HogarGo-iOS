@@ -12,7 +12,11 @@ struct MainTabsView: View {
 
             VStack(spacing: 0) {
                 // Barra superior permanente
-                HogarGoTopBar(onAvatarTap: { showProfile = true })
+                // El regalo lleva a Mascota, donde se gastan las monedas en el armario.
+                HogarGoTopBar(
+                    onAvatarTap: { showProfile = true },
+                    onGiftTap: { selectedTab = .pet }
+                )
 
                 // Contenido dinámico según la pestaña seleccionada
                 ZStack {
@@ -37,17 +41,6 @@ struct MainTabsView: View {
         }
         .sheet(isPresented: $showProfile) {
             ProfileView()
-        }
-    }
-
-    private func tabPlaceholder(title: String, icon: String) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 48))
-                .foregroundStyle(HogarGoColors.brandOrange)
-            Text(title)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundStyle(HogarGoColors.primaryText)
         }
     }
 }

@@ -89,6 +89,8 @@ struct AccessSheet<Content: View>: View {
             VStack(alignment: .leading, spacing: 18) {
                 SheetHeader(title: title)
                 content
+                // Espacio extra al final para poder subir el botón por encima del teclado.
+                Color.clear.frame(height: 220)
             }
             .padding(20)
         }
