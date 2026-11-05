@@ -190,7 +190,7 @@ private struct PetContent: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(HogarGoColors.primaryText)
                 Spacer()
-                Text("\(Int(value * 100))%")
+                Text("\(Int((value * 100).rounded()))%")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(HogarGoColors.secondaryText)
             }

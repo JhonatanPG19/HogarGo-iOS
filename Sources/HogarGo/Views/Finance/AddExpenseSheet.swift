@@ -54,6 +54,9 @@ struct AddExpenseSheet: View {
                 .padding(20)
             }
             .background(HogarGoColors.background)
+            // El error desaparece en cuanto la persona vuelve a escribir en ese campo.
+            .onChange(of: title) { titleError = nil }
+            .onChange(of: amountText) { amountError = nil }
             .navigationTitle(L10n.financeNewExpense)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -87,21 +90,21 @@ struct AddExpenseSheet: View {
     }
 
     private func save() {
-        titleError = nil
-        amountError = nil
+        // Se validan los dos campos a la vez para mostrar todos los errores juntos.
+        let amount = FinanceFormat.parseAmount(amountText)
+        titleError = title.trimmed.isEmpty ? L10n.financeErrorEmptyTitle : nil
+        amountError = (amount ?? 0) > 0 ? nil : L10n.financeErrorInvalidAmount
+        guard titleError == nil, amountError == nil else { return }
+
         do {
             try appState.financeRepository.addExpense(
                 householdId: householdId,
                 title: title,
                 category: category,
-                amount: FinanceFormat.parseAmount(amountText),
+                amount: amount,
                 dateISO: ISODay.string(from: date)
             )
             dismiss()
-        } catch FinanceError.emptyTitle {
-            titleError = L10n.financeErrorEmptyTitle
-        } catch FinanceError.invalidAmount {
-            amountError = L10n.financeErrorInvalidAmount
         } catch {
             appState.showToast(L10n.financeErrorInvalidAmount)
         }

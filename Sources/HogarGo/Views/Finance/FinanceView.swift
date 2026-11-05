@@ -261,6 +261,7 @@ private struct FinanceContent: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .financeCard(radius: 22, padding: 16)
     }
 
@@ -284,6 +285,7 @@ private struct FinanceContent: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .financeCard(radius: 22, padding: 16)
     }
 }

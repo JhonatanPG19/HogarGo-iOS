@@ -27,7 +27,7 @@ struct HomeGoalCard: View {
                             .lineLimit(1)
                     }
                     Spacer()
-                    Text("\(Int(goal.progress * 100))%")
+                    Text("\(Int((goal.progress * 100).rounded()))%")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(HogarGoColors.primaryText)
                 }
@@ -107,7 +107,7 @@ struct HomeZoriCard: View {
 
     private func miniStat(_ label: String, _ value: Double) -> some View {
         VStack(spacing: 4) {
-            Text("\(label) \(Int(value * 100))%")
+            Text("\(label) \(Int((value * 100).rounded()))%")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(HogarGoColors.secondaryText)
             GeometryReader { proxy in
