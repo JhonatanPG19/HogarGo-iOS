@@ -49,8 +49,8 @@ struct CreateHouseholdView: View {
                 }
             }
 
+        } footer: {
             HogarPrimaryButton(title: L10n.createAction, isEnabled: canSubmit, action: submit)
-                .padding(.top, 6)
         }
         .onAppear { if code.isEmpty { code = appState.repository.suggestCode() } }
         .onChange(of: name) { error = nil }

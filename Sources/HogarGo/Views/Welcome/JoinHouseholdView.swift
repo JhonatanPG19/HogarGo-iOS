@@ -31,8 +31,8 @@ struct JoinHouseholdView: View {
             HogarTextField(label: L10n.homeCode, placeholder: "HGR-789",
                            text: $code, kind: .code, error: error.message(for: .code))
 
+        } footer: {
             HogarPrimaryButton(title: L10n.joinAction, isEnabled: canSubmit, action: submit)
-                .padding(.top, 6)
         }
         .onChange(of: name) { fieldsEdited() }
         .onChange(of: recoveryUser) { fieldsEdited() }

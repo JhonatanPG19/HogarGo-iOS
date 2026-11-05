@@ -24,8 +24,8 @@ struct LoginView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(HogarGoColors.brandOrangeDeep)
 
+        } footer: {
             HogarPrimaryButton(title: L10n.signIn, isEnabled: canSubmit, action: submit)
-                .padding(.top, 6)
         }
         .onChange(of: nameOrUser) { error = nil }
         .onChange(of: code) { error = nil }

@@ -80,22 +80,46 @@ struct WelcomeView: View {
 }
 
 /// Contenedor común de las hojas de acceso.
-struct AccessSheet<Content: View>: View {
+struct AccessSheet<Content: View, Footer: View>: View {
     let title: String
-    @ViewBuilder var content: Content
+    let content: Content
+    /// Botón principal: queda fijo abajo y sube junto con el teclado, así nunca se tapa.
+    let footer: Footer
+
+    init(
+        title: String,
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder footer: () -> Footer
+    ) {
+        self.title = title
+        self.content = content()
+        self.footer = footer()
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 SheetHeader(title: title)
                 content
-                // Espacio extra al final para poder subir el botón por encima del teclado.
-                Color.clear.frame(height: 220)
             }
             .padding(20)
         }
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            footer
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
+                .background(HogarGoColors.background)
+        }
         .background(HogarGoColors.background.ignoresSafeArea())
         .hogarToast()
+    }
+}
+
+extension AccessSheet where Footer == EmptyView {
+    /// Hoja sin botón fijo (los botones van dentro del contenido).
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.init(title: title, content: content, footer: { EmptyView() })
     }
 }
