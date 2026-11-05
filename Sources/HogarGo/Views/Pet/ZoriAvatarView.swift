@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Zorro Zori con los objetos puestos. Los objetos se colocan con fracciones del tamaño del avatar.
 struct ZoriAvatarView: View {
@@ -18,7 +19,7 @@ struct ZoriAvatarView: View {
             }
 
             // 2) Zorro
-            Image("img_zori_fox", bundle: .module)
+            foxImage
                 .resizable()
                 .scaledToFit()
                 .frame(width: size, height: size)
@@ -29,6 +30,15 @@ struct ZoriAvatarView: View {
             }
         }
         .frame(width: size, height: size)
+    }
+
+    /// El PNG vive en Resources (no en un catálogo de assets), así que `Image(_:bundle:)` no lo encuentra:
+    /// se carga con `UIImage(named:in:)` desde el bundle del paquete.
+    private var foxImage: Image {
+        if let ui = UIImage(named: "img_zori_fox", in: Bundle.module, with: nil) {
+            return Image(uiImage: ui)
+        }
+        return Image(systemName: "pawprint.fill")
     }
 
     private func itemView(_ item: WardrobeEntry) -> some View {
