@@ -54,7 +54,7 @@ struct TasksView: View {
                                 task: task,
                                 assigneeName: memberName(for: task.assigneeId),
                                 onToggle: {
-                                    appState.taskRepository.toggleTask(id: task.id)
+                                    _ = try? appState.taskRepository.toggleTask(id: task.id)
                                 }
                             )
                         }

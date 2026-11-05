@@ -15,14 +15,13 @@ final class TaskRepository {
 
     /// Todas las tareas de un hogar, ordenadas: pendientes primero, luego más recientes.
     func tasks(householdId: String) -> [HouseholdTask] {
+        // SwiftData no permite ordenar por un Bool: se trae por fecha y se separan en memoria.
         let descriptor = FetchDescriptor<HouseholdTask>(
             predicate: #Predicate { $0.householdId == householdId },
-            sortBy: [
-                SortDescriptor(\.completed, order: .forward),
-                SortDescriptor(\.createdAt, order: .reverse)
-            ]
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
-        return (try? context.fetch(descriptor)) ?? []
+        let all = (try? context.fetch(descriptor)) ?? []
+        return all.filter { !$0.completed } + all.filter(\.completed)
     }
 
     /// Tarea por id.

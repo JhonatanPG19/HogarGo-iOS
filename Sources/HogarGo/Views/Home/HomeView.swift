@@ -89,7 +89,7 @@ struct HomeView: View {
                     task: nextPendingTask,
                     onToggle: {
                         if let task = nextPendingTask {
-                            appState.taskRepository.toggleTask(id: task.id)
+                            _ = try? appState.taskRepository.toggleTask(id: task.id)
                         }
                     }
                 )
