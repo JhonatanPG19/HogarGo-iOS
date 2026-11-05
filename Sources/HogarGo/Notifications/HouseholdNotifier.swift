@@ -30,11 +30,12 @@ final class HouseholdNotifier: NSObject, UNUserNotificationCenterDelegate {
     /// Si hoy ya se completó una tarea, no suena hoy: se programa solo para mañana.
     func updateStreakReminder(hasPendingTasks: Bool, isStreakAtRisk: Bool, hasCompletedToday: Bool = false) {
         cancelStreakReminder()
-        guard hasPendingTasks || isStreakAtRisk else { return }
+        // Si hoy ya se cumplió, mañana la racha estará en riesgo: se avisa aunque no queden tareas pendientes.
+        guard hasPendingTasks || isStreakAtRisk || hasCompletedToday else { return }
 
         let content = UNMutableNotificationContent()
         content.title = L10n.tr("¡Mantén tu racha en HogarGo! 🔥", "Keep your HogarGo streak going! 🔥")
-        content.body = isStreakAtRisk
+        content.body = (isStreakAtRisk || hasCompletedToday)
             ? L10n.tr("Tu racha diaria está en riesgo. Completa una tarea antes de que termine el día.",
                       "Your daily streak is at risk. Complete a task before the day ends.")
             : L10n.tr("Tienes tareas pendientes en el hogar. ¡Haz que tu casa brille hoy!",
