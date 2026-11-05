@@ -88,6 +88,9 @@ final class HouseholdRepository {
         let nameKey = Member.key(for: name)
         let existing = members(householdId: household.id)
         if existing.contains(where: { $0.nameKey == nameKey }) { throw HogarError.nameTaken }
+        // Evita que el nombre o el usuario de esta persona se confundan con los de otra al iniciar sesión.
+        if nameClashesWithRecovery(name, in: existing, excluding: nil) { throw HogarError.nameTaken }
+        if recoveryClashes(recoveryUser, in: existing, excluding: nil) { throw HogarError.recoveryUserTaken }
 
         return try transaction {
             let member = Member(
@@ -119,8 +122,11 @@ final class HouseholdRepository {
         let all = members(householdId: household.id)
         let nameKey = Member.key(for: rawText)
         let recoveryKey = RecoveryUser.hash(rawText)
+        // El nombre manda. El usuario de recuperación solo sirve si identifica a UNA persona:
+        // si dos comparten el mismo, no se adivina quién es (así nadie entra a la cuenta de otra).
+        let byRecovery = all.filter { !$0.recoveryKey.isEmpty && $0.recoveryKey == recoveryKey }
         let found = all.first(where: { $0.nameKey == nameKey })
-            ?? all.first(where: { !$0.recoveryKey.isEmpty && $0.recoveryKey == recoveryKey })
+            ?? (byRecovery.count == 1 ? byRecovery.first : nil)
 
         guard let member = found else {
             if !removedNotices(householdId: household.id, nameKey: nameKey).isEmpty {
@@ -278,6 +284,8 @@ final class HouseholdRepository {
         if me.hasRecoveryUser && RecoveryUser.hash(newName) == me.recoveryKey {
             throw HogarError.nameSameAsRecoveryUser
         }
+        let others = members(householdId: me.householdId)
+        if nameClashesWithRecovery(newName, in: others, excluding: me.id) { throw HogarError.nameTaken }
 
         try transaction {
             me.name = newName
@@ -294,6 +302,9 @@ final class HouseholdRepository {
         if RecoveryUser.normalize(new) != RecoveryUser.normalize(repeatNew) { throw HogarError.recoveryMismatch }
         let newKey = RecoveryUser.hash(new)
         if me.hasRecoveryUser && newKey == me.recoveryKey { throw HogarError.recoverySameAsCurrent }
+        if recoveryClashes(new, in: members(householdId: me.householdId), excluding: me.id) {
+            throw HogarError.recoveryUserTaken
+        }
 
         try transaction {
             me.recoveryKey = newKey
@@ -349,6 +360,21 @@ final class HouseholdRepository {
             arg1: arg1,
             arg2: arg2
         ))
+    }
+
+    /// ¿Ese nombre es el usuario de recuperación de otra persona del hogar?
+    private func nameClashesWithRecovery(_ name: String, in members: [Member], excluding memberId: String?) -> Bool {
+        let key = RecoveryUser.hash(name)
+        return members.contains { $0.id != memberId && !$0.recoveryKey.isEmpty && $0.recoveryKey == key }
+    }
+
+    /// ¿Ese usuario de recuperación ya lo usa otra persona, o es el nombre de otra persona?
+    private func recoveryClashes(_ recoveryUser: String, in members: [Member], excluding memberId: String?) -> Bool {
+        let key = RecoveryUser.hash(recoveryUser)
+        let normalized = RecoveryUser.normalize(recoveryUser)
+        return members.contains {
+            $0.id != memberId && (($0.recoveryKey == key) || $0.nameKey == normalized)
+        }
     }
 
     private func removedNotices(householdId: String, nameKey: String) -> [HouseholdNotice] {

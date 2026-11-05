@@ -18,6 +18,8 @@ enum HogarError: String, Error, Equatable {
     case recoveryCurrentWrong = "RECOVERY_CURRENT_WRONG"
     case recoveryMismatch = "RECOVERY_MISMATCH"
     case recoverySameAsCurrent = "RECOVERY_SAME_AS_CURRENT"
+    /// El usuario de recuperación ya lo usa (o es el nombre de) otra persona del hogar.
+    case recoveryUserTaken = "RECOVERY_USER_TAKEN"
     case removedFromHousehold = "REMOVED_FROM_HOUSEHOLD"
     /// Quien actúa no existe, no es admin, no está aprobado o es de otro hogar.
     case notAllowed = "NOT_ALLOWED"
@@ -30,7 +32,7 @@ enum HogarError: String, Error, Equatable {
         switch self {
         case .invalidCode, .codeNotFound, .codeTaken: return .code
         case .recoveryUserInvalid, .recoveryUserSameAsName, .recoveryCurrentWrong,
-             .recoveryMismatch, .recoverySameAsCurrent: return .recovery
+             .recoveryMismatch, .recoverySameAsCurrent, .recoveryUserTaken: return .recovery
         case .emptyHouseholdName: return .household
         case .emptyTaskTitle, .taskNotFound: return .task
         case .notAllowed, .unknown: return .general
@@ -56,6 +58,7 @@ enum HogarError: String, Error, Equatable {
         case .recoveryCurrentWrong: return L10n.tr("El usuario actual no coincide", "The current username doesn't match")
         case .recoveryMismatch: return L10n.tr("Los dos usuarios no coinciden", "The two usernames don't match")
         case .recoverySameAsCurrent: return L10n.tr("Debe ser distinto del usuario actual", "Must be different from the current username")
+        case .recoveryUserTaken: return L10n.tr("Ese usuario ya lo usa otra persona de este hogar. Elige otro.", "Someone in this home already uses that username. Pick another one.")
         case .removedFromHousehold: return L10n.tr("El administrador te eliminó de este hogar. Si quieres volver, pide ingreso de nuevo desde «Unirme a un hogar».", "The admin removed you from this home. If you want to come back, request to join again from “Join a Home”.")
         case .notAllowed: return L10n.tr("Solo el administrador puede hacer esto", "Only the admin can do this")
         case .unknown: return L10n.tr("Algo salió mal. Inténtalo de nuevo.", "Something went wrong. Please try again.")
