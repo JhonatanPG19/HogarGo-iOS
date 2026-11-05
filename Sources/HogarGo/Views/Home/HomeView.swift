@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// Modales presentables desde la pantalla de Inicio mediante un único modifier `.sheet(item:)`.
@@ -20,9 +21,22 @@ struct HomeView: View {
     @State private var dailyAdvice: String = AdviceService.fallbackAdvice
     @State private var isFetchingAdvice: Bool = false
 
+    // @Query se vuelve a evaluar al guardar: la tarjeta y la racha siempre muestran el estado real.
+    @Query(sort: \HouseholdTask.createdAt, order: .forward) private var allTasks: [HouseholdTask]
+
+    private var householdTasks: [HouseholdTask] {
+        guard let householdId = appState.householdId else { return [] }
+        return allTasks.filter { $0.householdId == householdId }
+    }
+
     private var nextPendingTask: HouseholdTask? {
-        guard let householdId = appState.householdId else { return nil }
-        return appState.taskRepository.nextPendingTask(householdId: householdId)
+        householdTasks.first { !$0.completed }
+    }
+
+    private var streak: StreakInfo {
+        StreakCalculator.calculate(
+            completedDates: householdTasks.filter(\.completed).compactMap(\.completedDate)
+        )
     }
 
     var body: some View {
@@ -39,7 +53,6 @@ struct HomeView: View {
                         .foregroundStyle(HogarGoColors.secondaryText)
 
                     // Chip de Energía Diaria / Racha
-                    let streak = appState.currentStreak
                     HStack(spacing: 10) {
                         ZStack {
                             Circle()

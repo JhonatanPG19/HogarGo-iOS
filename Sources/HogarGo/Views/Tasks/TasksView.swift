@@ -1,16 +1,27 @@
+import SwiftData
 import SwiftUI
 
 struct TasksView: View {
     @Environment(AppState.self) private var appState
     @State private var showNewTaskSheet: Bool = false
 
-    private var tasks: [HouseholdTask] {
+    // @Query se vuelve a evaluar solo al guardar en la base: una tarea nueva aparece al instante.
+    @Query(sort: \HouseholdTask.createdAt, order: .reverse) private var allTasks: [HouseholdTask]
+
+    private var householdTasks: [HouseholdTask] {
         guard let householdId = appState.householdId else { return [] }
-        return appState.taskRepository.tasks(householdId: householdId)
+        return allTasks.filter { $0.householdId == householdId }
+    }
+
+    /// Pendientes primero, luego las completadas; cada grupo de más reciente a más antigua.
+    private var tasks: [HouseholdTask] {
+        householdTasks.filter { !$0.completed } + householdTasks.filter(\.completed)
     }
 
     private var streak: StreakInfo {
-        appState.currentStreak
+        StreakCalculator.calculate(
+            completedDates: householdTasks.filter(\.completed).compactMap(\.completedDate)
+        )
     }
 
     var body: some View {
