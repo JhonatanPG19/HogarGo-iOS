@@ -69,10 +69,33 @@ enum FinanceFormat {
 /// Gastos y metas de ahorro del hogar.
 @MainActor
 final class FinanceRepository {
-    private let context: ModelContext
+    let context: ModelContext
 
     init(context: ModelContext) {
         self.context = context
+    }
+
+    // MARK: - Lecturas
+
+    /// Gastos del hogar: fecha descendente y, a igual fecha, el más reciente primero.
+    func expenses(householdId: String) -> [Expense] {
+        let descriptor = FetchDescriptor<Expense>(
+            predicate: #Predicate { $0.householdId == householdId },
+            sortBy: [
+                SortDescriptor(\.dateISO, order: .reverse),
+                SortDescriptor(\.createdAt, order: .reverse),
+            ]
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    /// Metas de ahorro del hogar, de la más antigua a la más reciente.
+    func goals(householdId: String) -> [SavingsGoal] {
+        let descriptor = FetchDescriptor<SavingsGoal>(
+            predicate: #Predicate { $0.householdId == householdId },
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
     }
 
     // MARK: - Gastos
