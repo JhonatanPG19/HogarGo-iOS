@@ -1,28 +1,35 @@
-import SwiftData
 import SwiftUI
 
+/// Pantalla de Tareas: envoltorio que resuelve el hogar activo.
 struct TasksView: View {
     @Environment(AppState.self) private var appState
+
+    var body: some View {
+        if let householdId = appState.householdId {
+            TasksContent(householdId: householdId, appState: appState)
+                .id(householdId)
+        } else {
+            Color.clear
+        }
+    }
+}
+
+private struct TasksContent: View {
     @State private var showNewTaskSheet: Bool = false
 
-    // @Query se vuelve a evaluar solo al guardar en la base: una tarea nueva aparece al instante.
-    @Query(sort: \HouseholdTask.createdAt, order: .reverse) private var allTasks: [HouseholdTask]
+    // MVVM: el ViewModel guarda las tareas y calcula la racha; la vista solo las pinta.
+    @State private var viewModel: TasksViewModel
 
-    private var householdTasks: [HouseholdTask] {
-        guard let householdId = appState.householdId else { return [] }
-        return allTasks.filter { $0.householdId == householdId }
+    init(householdId: String, appState: AppState) {
+        _viewModel = State(initialValue: TasksViewModel(
+            householdId: householdId,
+            taskRepository: appState.taskRepository,
+            householdRepository: appState.repository
+        ))
     }
 
-    /// Pendientes primero, luego las completadas; cada grupo de más reciente a más antigua.
-    private var tasks: [HouseholdTask] {
-        householdTasks.filter { !$0.completed } + householdTasks.filter(\.completed)
-    }
-
-    private var streak: StreakInfo {
-        StreakCalculator.calculate(
-            completedDates: householdTasks.filter(\.completed).compactMap(\.completedDate)
-        )
-    }
+    private var tasks: [HouseholdTask] { viewModel.tasks }
+    private var streak: StreakInfo { viewModel.streak }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -63,9 +70,9 @@ struct TasksView: View {
                         ForEach(tasks) { task in
                             TaskRowCard(
                                 task: task,
-                                assigneeName: memberName(for: task.assigneeId),
+                                assigneeName: viewModel.assigneeName(for: task.assigneeId),
                                 onToggle: {
-                                    _ = try? appState.taskRepository.toggleTask(id: task.id)
+                                    viewModel.toggle(task)
                                 }
                             )
                         }
@@ -104,14 +111,10 @@ struct TasksView: View {
             .padding(.top, 12)
         }
         .background(HogarGoColors.background)
+        .onAppear { viewModel.start() }
         .sheet(isPresented: $showNewTaskSheet) {
             NewTaskView()
         }
-    }
-
-    private func memberName(for memberId: String?) -> String? {
-        guard let memberId else { return nil }
-        return appState.repository.member(id: memberId)?.name
     }
 }
 
