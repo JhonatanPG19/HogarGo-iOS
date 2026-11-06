@@ -7,7 +7,7 @@ struct PetView: View {
 
     var body: some View {
         if let householdId = appState.householdId {
-            PetContent(householdId: householdId)
+            PetContent(householdId: householdId, repository: appState.petRepository)
                 .id(householdId)
         } else {
             Color.clear
@@ -16,37 +16,19 @@ struct PetView: View {
 }
 
 private struct PetContent: View {
-    @Environment(AppState.self) private var appState
+    // MVVM: el ViewModel guarda el estado de Zori y calcula nivel, monedas y cooldown.
+    @State private var viewModel: PetViewModel
 
-    let householdId: String
-
-    @Query private var states: [PetState]
-    @Query private var wardrobe: [WardrobeItem]
-    @Query private var completedTasks: [HouseholdTask]
-
-    init(householdId: String) {
-        self.householdId = householdId
-        _states = Query(filter: #Predicate<PetState> { $0.householdId == householdId })
-        _wardrobe = Query(filter: #Predicate<WardrobeItem> { $0.householdId == householdId })
-        _completedTasks = Query(
-            filter: #Predicate<HouseholdTask> { $0.householdId == householdId && $0.completed }
-        )
+    init(householdId: String, repository: PetRepository) {
+        _viewModel = State(initialValue: PetViewModel(householdId: householdId, repository: repository))
     }
 
-    private var state: PetState? { states.first }
-    private var level: Int { state?.level ?? 1 }
-    private var happiness: Double { state?.happiness ?? PetRules.initialStat }
-    private var satiety: Double { state?.satiety ?? PetRules.initialStat }
-
-    private func item(_ id: String) -> WardrobeItem? { wardrobe.first { $0.itemId == id } }
-    private var equippedIds: Set<String> { Set(wardrobe.filter(\.equipped).map(\.itemId)) }
-
-    /// Monedas = ganadas − gastadas (nunca negativo).
-    private var coins: Int {
-        let earned = completedTasks.reduce(0) { $0 + $1.coinReward }
-        let spent = wardrobe.filter(\.owned).reduce(0) { $0 + (WardrobeCatalog.entry(for: $1.itemId)?.price ?? 0) }
-        return max(0, earned - spent)
-    }
+    private var level: Int { viewModel.level }
+    private var happiness: Double { viewModel.happiness }
+    private var satiety: Double { viewModel.satiety }
+    private var coins: Int { viewModel.coins }
+    private var equippedIds: Set<String> { viewModel.equippedIds }
+    private func item(_ id: String) -> WardrobeItem? { viewModel.item(id) }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -63,7 +45,7 @@ private struct PetContent: View {
             }
         }
         .background(HogarGoColors.background)
-        .onAppear { appState.petRepository.refreshOnOpen(householdId: householdId) }
+        .onAppear { viewModel.start() }
     }
 
     // MARK: - Escenario
@@ -76,10 +58,10 @@ private struct PetContent: View {
 
             HStack(spacing: 10) {
                 careButton(L10n.petFeed, fill: HogarGoColors.brandOrangeDeep, text: .white) {
-                    appState.petRepository.care(.feed, householdId: householdId)
+                    viewModel.feed()
                 }
                 careButton(L10n.petPlay, fill: HogarGoColors.brandOrange, text: HogarGoColors.primaryText) {
-                    appState.petRepository.care(.play, householdId: householdId)
+                    viewModel.play()
                 }
                 Button {
                     withAnimation { proxy.scrollTo("wardrobe", anchor: .top) }
@@ -133,28 +115,11 @@ private struct PetContent: View {
     /// El contador baja solo (se refresca cada 30 s) y el aviso desaparece al terminar el cooldown.
     private var cooldownNotice: some View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
-            let now = Int64(context.date.timeIntervalSince1970 * 1000)
-            let feed = PetRules.cooldownRemaining(last: state?.lastFeedAt ?? 0, now: now)
-            let play = PetRules.cooldownRemaining(last: state?.lastPlayAt ?? 0, now: now)
-
-            if let text = cooldownText(feed: feed, play: play) {
+            if let text = viewModel.cooldownText(now: context.date) {
                 Text(text)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(HogarGoColors.secondaryText)
             }
-        }
-    }
-
-    private func cooldownText(feed: Int64, play: Int64) -> String? {
-        switch (feed > 0, play > 0) {
-        case (false, false):
-            return nil
-        case (true, true):
-            return L10n.petCooldownAvailableIn(PetRules.minutesLabel(forRemaining: max(feed, play)))
-        case (true, false):
-            return L10n.petFeed + ": " + L10n.petCooldownAvailableIn(PetRules.minutesLabel(forRemaining: feed))
-        case (false, true):
-            return L10n.petPlay + ": " + L10n.petCooldownAvailableIn(PetRules.minutesLabel(forRemaining: play))
         }
     }
 
@@ -237,8 +202,8 @@ private struct PetContent: View {
                         coins: coins,
                         owned: item(entry.id)?.owned ?? false,
                         equipped: item(entry.id)?.equipped ?? false,
-                        onBuy: { appState.petRepository.buy(itemId: entry.id, householdId: householdId) },
-                        onToggle: { appState.petRepository.toggleEquipped(itemId: entry.id, householdId: householdId) }
+                        onBuy: { viewModel.buy(entry.id) },
+                        onToggle: { viewModel.toggleEquipped(entry.id) }
                     )
                 }
             }

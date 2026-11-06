@@ -9,7 +9,7 @@ enum PetCare {
 /// Cuidado de Zori y ropero. Monedas = tareas completadas − precio de lo comprado.
 @MainActor
 final class PetRepository {
-    private let context: ModelContext
+    let context: ModelContext
 
     init(context: ModelContext) {
         self.context = context
@@ -103,13 +103,13 @@ final class PetRepository {
 
     // MARK: - Consultas
 
-    private func state(householdId: String) -> PetState? {
+    func state(householdId: String) -> PetState? {
         var descriptor = FetchDescriptor<PetState>(predicate: #Predicate { $0.householdId == householdId })
         descriptor.fetchLimit = 1
         return try? context.fetch(descriptor).first
     }
 
-    private func wardrobe(householdId: String) -> [WardrobeItem] {
+    func wardrobe(householdId: String) -> [WardrobeItem] {
         let descriptor = FetchDescriptor<WardrobeItem>(predicate: #Predicate { $0.householdId == householdId })
         return (try? context.fetch(descriptor)) ?? []
     }
