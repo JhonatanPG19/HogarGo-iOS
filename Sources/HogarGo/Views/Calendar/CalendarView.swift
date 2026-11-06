@@ -7,7 +7,7 @@ struct CalendarView: View {
 
     var body: some View {
         if let householdId = appState.householdId {
-            CalendarContent(householdId: householdId)
+            CalendarContent(householdId: householdId, repository: appState.calendarRepository)
                 .id(householdId)
         } else {
             Color.clear
@@ -21,13 +21,10 @@ private enum CalendarColors {
 }
 
 private struct CalendarContent: View {
-    @Environment(AppState.self) private var appState
-
     let householdId: String
 
-    @Query private var bills: [Bill]
-    @Query private var events: [CalendarEvent]
-    @Query private var completedTasks: [HouseholdTask]
+    // MVVM: el ViewModel guarda facturas, eventos y tareas completadas y calcula lo que se pinta.
+    @State private var viewModel: CalendarViewModel
 
     /// Meses de desplazamiento respecto al mes actual y día seleccionado (sobreviven a la recreación de la escena).
     @SceneStorage("calendar.monthOffset") private var monthOffset = 0
@@ -36,17 +33,12 @@ private struct CalendarContent: View {
     @State private var showAddBill = false
     @State private var showAddEvent = false
 
-    init(householdId: String) {
+    init(householdId: String, repository: CalendarRepository) {
         self.householdId = householdId
-        _bills = Query(
-            filter: #Predicate<Bill> { $0.householdId == householdId },
-            sort: [SortDescriptor(\Bill.dueDateISO, order: .forward)]
-        )
-        _events = Query(filter: #Predicate<CalendarEvent> { $0.householdId == householdId })
-        _completedTasks = Query(
-            filter: #Predicate<HouseholdTask> { $0.householdId == householdId && $0.completed }
-        )
+        _viewModel = State(initialValue: CalendarViewModel(householdId: householdId, repository: repository))
     }
+
+    private var bills: [Bill] { viewModel.bills }
 
     private var todayISO: String { ISODay.today() }
     private var selectedDayISO: String { selectedISO.isEmpty ? todayISO : selectedISO }
@@ -66,6 +58,7 @@ private struct CalendarContent: View {
             .padding(.top, 12)
         }
         .background(HogarGoColors.background)
+        .onAppear { viewModel.start() }
         .sheet(isPresented: $showAddBill) {
             AddBillSheet(householdId: householdId)
         }
@@ -176,8 +169,8 @@ private struct CalendarContent: View {
                     .font(.system(size: 14, weight: isToday ? .bold : .medium, design: .rounded))
                     .foregroundStyle(HogarGoColors.primaryText)
                 HStack(spacing: 3) {
-                    ForEach(Array(dots(for: iso).enumerated()), id: \.offset) { _, color in
-                        Circle().fill(color).frame(width: 5, height: 5)
+                    ForEach(Array(viewModel.dots(for: iso).enumerated()), id: \.offset) { _, dot in
+                        Circle().fill(Self.color(for: dot)).frame(width: 5, height: 5)
                     }
                 }
                 .frame(height: 5)
@@ -194,22 +187,14 @@ private struct CalendarContent: View {
         .buttonStyle(.plain)
     }
 
-    /// Hasta 3 puntos, en este orden: factura, evento, tarea completada.
-    private func dots(for iso: String) -> [Color] {
-        var colors: [Color] = []
-
-        let dueBills = bills.filter { $0.dueDateISO == iso && !$0.paid }
-        if !dueBills.isEmpty {
-            let overdue = dueBills.contains { $0.dueDateISO <= todayISO }
-            colors.append(overdue ? HogarGoColors.alertRed : HogarGoColors.brandOrangeDeep)
+    /// El ViewModel decide qué puntos hay; la vista solo les pone color.
+    private static func color(for dot: CalendarDot) -> Color {
+        switch dot {
+        case .overdueBill: return HogarGoColors.alertRed
+        case .upcomingBill: return HogarGoColors.brandOrangeDeep
+        case .event: return CalendarColors.event
+        case .task: return CalendarColors.task
         }
-        if events.contains(where: { $0.dateISO == iso }) {
-            colors.append(CalendarColors.event)
-        }
-        if completedTasks.contains(where: { $0.completedDate == iso }) {
-            colors.append(CalendarColors.task)
-        }
-        return colors
     }
 
     private var legend: some View {
@@ -233,13 +218,11 @@ private struct CalendarContent: View {
 
     private var dayDetailCard: some View {
         let iso = selectedDayISO
-        let dayEvents = events
-            .filter { $0.dateISO == iso }
-            .sorted { ($0.timeLabel ?? "") < ($1.timeLabel ?? "") }
-        let dayBills = bills.filter { $0.dueDateISO == iso }
+        let dayEvents = viewModel.eventsOn(iso)
+        let dayBills = viewModel.billsDueOn(iso)
         // TODO(integración tareas): hoy solo se leen las tareas completadas; no hay eventos
         // automáticos tipo "próxima tarea".
-        let dayTasks = completedTasks.filter { $0.completedDate == iso }
+        let dayTasks = viewModel.tasksCompletedOn(iso)
         let isEmpty = dayEvents.isEmpty && dayBills.isEmpty && dayTasks.isEmpty
 
         return VStack(alignment: .leading, spacing: 12) {
@@ -316,12 +299,7 @@ private struct CalendarContent: View {
     // MARK: - Próximos eventos
 
     private var upcomingCard: some View {
-        let upcoming = events
-            .filter { $0.dateISO >= todayISO }
-            .sorted {
-                if $0.dateISO != $1.dateISO { return $0.dateISO < $1.dateISO }
-                return ($0.timeLabel ?? "") < ($1.timeLabel ?? "")
-            }
+        let upcoming = viewModel.upcomingEvents(today: todayISO)
 
         return VStack(alignment: .leading, spacing: 12) {
             Text(L10n.calendarUpcoming)
@@ -346,7 +324,7 @@ private struct CalendarContent: View {
     private func eventRow(_ event: CalendarEvent, subtitle: String?) -> some View {
         HStack(spacing: 10) {
             checkbox(checked: event.done) {
-                try? appState.calendarRepository.toggleEventDone(event)
+                viewModel.toggleEventDone(event)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(event.title)
@@ -361,7 +339,7 @@ private struct CalendarContent: View {
             }
             Spacer(minLength: 8)
             deleteButton(label: L10n.calendarDeleteEvent) {
-                try? appState.calendarRepository.deleteEvent(event)
+                viewModel.deleteEvent(event)
             }
         }
     }
@@ -410,7 +388,7 @@ private struct CalendarContent: View {
 
         return HStack(spacing: 10) {
             checkbox(checked: bill.paid) {
-                try? appState.calendarRepository.toggleBillPaid(bill)
+                viewModel.toggleBillPaid(bill)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(bill.title)
@@ -432,7 +410,7 @@ private struct CalendarContent: View {
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(HogarGoColors.primaryText)
             deleteButton(label: L10n.calendarDeleteBill) {
-                try? appState.calendarRepository.deleteBill(bill)
+                viewModel.deleteBill(bill)
             }
         }
     }

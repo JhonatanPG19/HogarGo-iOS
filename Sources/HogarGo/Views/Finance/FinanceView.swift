@@ -7,7 +7,7 @@ struct FinanceView: View {
 
     var body: some View {
         if let householdId = appState.householdId {
-            FinanceContent(householdId: householdId)
+            FinanceContent(householdId: householdId, repository: appState.financeRepository)
                 .id(householdId)
         } else {
             Color.clear
@@ -20,31 +20,21 @@ private struct FinanceContent: View {
 
     let householdId: String
 
-    // @Query con predicado por hogar: la lista se actualiza sola al insertar o borrar filas.
-    @Query private var expenses: [Expense]
-    @Query private var goals: [SavingsGoal]
+    // MVVM: el ViewModel guarda los datos y calcula lo derivado; la vista solo los pinta.
+    @State private var viewModel: FinanceViewModel
 
     @State private var showNewExpense = false
     @State private var showNewGoal = false
     @State private var goalToContribute: SavingsGoal?
     @State private var goalToDelete: SavingsGoal?
 
-    init(householdId: String) {
+    init(householdId: String, repository: FinanceRepository) {
         self.householdId = householdId
-        _expenses = Query(
-            filter: #Predicate<Expense> { $0.householdId == householdId },
-            sort: [
-                SortDescriptor(\Expense.dateISO, order: .reverse),
-                SortDescriptor(\Expense.createdAt, order: .reverse),
-            ]
-        )
-        _goals = Query(
-            filter: #Predicate<SavingsGoal> { $0.householdId == householdId },
-            sort: [SortDescriptor(\SavingsGoal.createdAt, order: .forward)]
-        )
+        _viewModel = State(initialValue: FinanceViewModel(householdId: householdId, repository: repository))
     }
 
-    private var monthExpenses: [Expense] { FinanceSummary.monthExpenses(expenses) }
+    private var expenses: [Expense] { viewModel.expenses }
+    private var goals: [SavingsGoal] { viewModel.goals }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -60,6 +50,7 @@ private struct FinanceContent: View {
             .padding(.top, 12)
         }
         .background(HogarGoColors.background)
+        .onAppear { viewModel.start() }
         .sheet(isPresented: $showNewExpense) {
             AddExpenseSheet(householdId: householdId)
         }
@@ -78,7 +69,7 @@ private struct FinanceContent: View {
             presenting: goalToDelete
         ) { goal in
             Button(L10n.financeGoalDeleteButton, role: .destructive) {
-                try? appState.financeRepository.deleteGoal(goal)
+                viewModel.deleteGoal(goal)
                 goalToDelete = nil
             }
             Button(L10n.financeCancelButton, role: .cancel) { goalToDelete = nil }
@@ -184,8 +175,7 @@ private struct FinanceContent: View {
     }
 
     private var monthCard: some View {
-        let month = monthExpenses
-        return VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(L10n.financeThisMonth)
                 .font(.system(size: 17, weight: .bold, design: .rounded))
                 .foregroundStyle(HogarGoColors.primaryText)
@@ -194,12 +184,12 @@ private struct FinanceContent: View {
                 metricTile(
                     icon: "chart.line.downtrend.xyaxis",
                     label: L10n.financeSpent,
-                    value: FinanceFormat.money(FinanceSummary.total(month))
+                    value: FinanceFormat.money(viewModel.monthTotal)
                 )
                 metricTile(
                     icon: "divide",
                     label: L10n.financeAverage,
-                    value: FinanceFormat.money(FinanceSummary.average(month))
+                    value: FinanceFormat.money(viewModel.monthAverage)
                 )
             }
         }
@@ -229,7 +219,7 @@ private struct FinanceContent: View {
     }
 
     private var breakdownCard: some View {
-        let rows = FinanceSummary.breakdown(monthExpenses)
+        let rows = viewModel.breakdown
         return VStack(alignment: .leading, spacing: 14) {
             Text(L10n.financeBreakdown)
                 .font(.system(size: 17, weight: .bold, design: .rounded))
@@ -279,7 +269,7 @@ private struct FinanceContent: View {
                 VStack(spacing: 14) {
                     ForEach(expenses) { expense in
                         ExpenseRow(expense: expense) {
-                            try? appState.financeRepository.deleteExpense(expense)
+                            viewModel.deleteExpense(expense)
                         }
                     }
                 }

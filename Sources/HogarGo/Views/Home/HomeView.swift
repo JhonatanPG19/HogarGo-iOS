@@ -1,4 +1,3 @@
-import SwiftData
 import SwiftUI
 
 /// Modales presentables desde la pantalla de Inicio mediante un único modifier `.sheet(item:)`.
@@ -12,39 +11,59 @@ enum HomeModalSheet: String, Identifiable {
     var id: String { rawValue }
 }
 
+/// Pantalla de Inicio: envoltorio que resuelve el hogar activo.
 struct HomeView: View {
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        if let householdId = appState.householdId {
+            HomeContent(householdId: householdId, appState: appState)
+                .id(householdId)
+        } else {
+            Color.clear
+        }
+    }
+}
+
+private struct HomeContent: View {
     @Environment(AppState.self) private var appState
 
     // Estados de pantalla y modales
     @State private var activeSheet: HomeModalSheet? = nil
     @State private var showMembersDialog: Bool = false
-    @State private var dailyAdvice: String = AdviceService.fallbackAdvice
-    @State private var isFetchingAdvice: Bool = false
 
-    // @Query se vuelve a evaluar al guardar: la tarjeta y la racha siempre muestran el estado real.
-    @Query(sort: \HouseholdTask.createdAt, order: .forward) private var allTasks: [HouseholdTask]
+    // MVVM: Inicio compone ViewModels. `HomeViewModel` maneja tareas, racha y la llamada a la API;
+    // los otros dos alimentan las tarjetas de Zori y de la meta de ahorro.
+    @State private var viewModel: HomeViewModel
+    @State private var petViewModel: PetViewModel
+    @State private var financeViewModel: FinanceViewModel
 
-    private var householdTasks: [HouseholdTask] {
-        guard let householdId = appState.householdId else { return [] }
-        return allTasks.filter { $0.householdId == householdId }
+    init(householdId: String, appState: AppState) {
+        _viewModel = State(initialValue: HomeViewModel(
+            householdId: householdId,
+            memberId: appState.memberId,
+            taskRepository: appState.taskRepository,
+            householdRepository: appState.repository
+        ))
+        _petViewModel = State(initialValue: PetViewModel(
+            householdId: householdId,
+            repository: appState.petRepository
+        ))
+        _financeViewModel = State(initialValue: FinanceViewModel(
+            householdId: householdId,
+            repository: appState.financeRepository
+        ))
     }
 
-    private var nextPendingTask: HouseholdTask? {
-        householdTasks.first { !$0.completed }
-    }
-
-    private var streak: StreakInfo {
-        StreakCalculator.calculate(
-            completedDates: householdTasks.filter(\.completed).compactMap(\.completedDate)
-        )
-    }
+    private var nextPendingTask: HouseholdTask? { viewModel.nextPendingTask }
+    private var streak: StreakInfo { viewModel.streak }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
                 // 1. Saludo y racha diaria
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(L10n.homeGreeting(appState.currentMember?.name))
+                    Text(L10n.homeGreeting(viewModel.currentMemberName))
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(red: 34/255, green: 26/255, blue: 21/255))
 
@@ -85,32 +104,27 @@ struct HomeView: View {
 
                 // 2. Tarjeta: Consejo del Día (API en línea)
                 DailyAdviceCard(
-                    advice: dailyAdvice,
-                    isLoading: isFetchingAdvice,
+                    advice: viewModel.advice,
+                    isLoading: viewModel.isFetchingAdvice,
                     onRefresh: {
-                        Task { await fetchAdvice() }
+                        Task { await viewModel.refreshAdvice() }
                     }
                 )
 
                 // 3. Tarjeta Héroe: Zori (estado real de la mascota)
-                if let householdId = appState.householdId {
-                    HomeZoriCard(householdId: householdId)
-                }
+                HomeZoriCard(viewModel: petViewModel)
 
                 // 4. Tarjeta: Siguiente Tarea (Persistencia real)
                 NextTaskCard(
                     task: nextPendingTask,
                     onToggle: {
-                        if let task = nextPendingTask {
-                            _ = try? appState.taskRepository.toggleTask(id: task.id)
-                        }
+                        // Se completa exactamente la tarea que muestra la tarjeta.
+                        viewModel.toggleNextTask()
                     }
                 )
 
                 // 5. Tarjeta: Meta de Ahorro (real, si existe)
-                if let householdId = appState.householdId {
-                    HomeGoalCard(householdId: householdId)
-                }
+                HomeGoalCard(viewModel: financeViewModel)
 
                 // 6. Cuadrícula 2x2: Accesos rápidos (New Task, Add Expense, Event, More)
                 QuickActionsGrid(
@@ -126,10 +140,13 @@ struct HomeView: View {
             .padding(.top, 12)
         }
         .background(HogarGoColors.background)
+        .onAppear {
+            viewModel.start()
+            petViewModel.start()
+            financeViewModel.start()
+        }
         .task {
-            if dailyAdvice == AdviceService.fallbackAdvice {
-                await fetchAdvice()
-            }
+            await viewModel.loadAdviceIfNeeded()
         }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
@@ -163,23 +180,8 @@ struct HomeView: View {
         .alert(L10n.tr("Integrantes del Hogar", "Home Members"), isPresented: $showMembersDialog) {
             Button(L10n.close, role: .cancel) {}
         } message: {
-            Text(membersSummary)
+            Text(viewModel.membersSummary)
         }
-    }
-
-    private func fetchAdvice() async {
-        isFetchingAdvice = true
-        dailyAdvice = await AdviceService.shared.fetchDailyAdvice()
-        isFetchingAdvice = false
-    }
-
-    private var membersSummary: String {
-        let members = appState.householdId.map(appState.repository.approvedMembers(householdId:)) ?? []
-        guard !members.isEmpty else {
-            return L10n.tr("No hay integrantes registrados en este hogar todavía.", "There are no members registered in this home yet.")
-        }
-        let lines = members.map { "• \($0.name)\($0.isAdmin ? " (" + L10n.adminBadge + ")" : "")" }
-        return ([L10n.tr("Miembros registrados en la familia:", "Registered family members:")] + lines).joined(separator: "\n")
     }
 }
 

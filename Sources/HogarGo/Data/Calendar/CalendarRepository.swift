@@ -41,10 +41,36 @@ enum CalendarMath {
 /// Facturas y eventos del hogar.
 @MainActor
 final class CalendarRepository {
-    private let context: ModelContext
+    let context: ModelContext
 
     init(context: ModelContext) {
         self.context = context
+    }
+
+    // MARK: - Lecturas
+
+    /// Facturas del hogar por fecha de vencimiento ascendente.
+    func bills(householdId: String) -> [Bill] {
+        let descriptor = FetchDescriptor<Bill>(
+            predicate: #Predicate { $0.householdId == householdId },
+            sortBy: [SortDescriptor(\.dueDateISO, order: .forward)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    func events(householdId: String) -> [CalendarEvent] {
+        let descriptor = FetchDescriptor<CalendarEvent>(
+            predicate: #Predicate { $0.householdId == householdId }
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    /// Tareas completadas del hogar (solo se leen: el calendario las muestra como puntos verdes).
+    func completedTasks(householdId: String) -> [HouseholdTask] {
+        let descriptor = FetchDescriptor<HouseholdTask>(
+            predicate: #Predicate { $0.householdId == householdId && $0.completed }
+        )
+        return (try? context.fetch(descriptor)) ?? []
     }
 
     // MARK: - Facturas
