@@ -1,20 +1,13 @@
-import SwiftData
 import SwiftUI
 
 /// Tarjeta de Inicio con la meta de ahorro real más antigua del hogar.
 /// Si el hogar aún no tiene metas, no se muestra.
+/// Recibe el `FinanceViewModel` ya creado por Inicio (que lo inicia en `onAppear`).
 struct HomeGoalCard: View {
-    @Query private var goals: [SavingsGoal]
-
-    init(householdId: String) {
-        _goals = Query(
-            filter: #Predicate<SavingsGoal> { $0.householdId == householdId },
-            sort: [SortDescriptor(\SavingsGoal.createdAt, order: .forward)]
-        )
-    }
+    let viewModel: FinanceViewModel
 
     var body: some View {
-        if let goal = goals.first {
+        if let goal = viewModel.goals.first {
             VStack(spacing: 12) {
                 HStack {
                     HStack(spacing: 8) {
@@ -59,33 +52,20 @@ struct HomeGoalCard: View {
 }
 
 /// Tarjeta de Inicio con Zori real: objetos puestos, nivel y estado.
+/// Recibe el `PetViewModel` ya creado por Inicio (su `start()` crea el estado y aplica el decaimiento).
 struct HomeZoriCard: View {
-    @Environment(AppState.self) private var appState
-
-    let householdId: String
-
-    @Query private var states: [PetState]
-    @Query private var wardrobe: [WardrobeItem]
-
-    init(householdId: String) {
-        self.householdId = householdId
-        _states = Query(filter: #Predicate<PetState> { $0.householdId == householdId })
-        _wardrobe = Query(filter: #Predicate<WardrobeItem> { $0.householdId == householdId })
-    }
-
-    private var state: PetState? { states.first }
-    private var equippedIds: Set<String> { Set(wardrobe.filter(\.equipped).map(\.itemId)) }
+    let viewModel: PetViewModel
 
     var body: some View {
         VStack(spacing: 12) {
-            ZoriAvatarView(equippedIds: equippedIds, size: 150)
+            ZoriAvatarView(equippedIds: viewModel.equippedIds, size: 150)
                 .padding(.top, 8)
 
             HStack(spacing: 8) {
                 Text("Zori")
                     .font(.system(size: 19, weight: .bold, design: .rounded))
                     .foregroundStyle(HogarGoColors.primaryText)
-                Text(L10n.petLevel(state?.level ?? 1))
+                Text(L10n.petLevel(viewModel.level))
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(HogarGoColors.brandOrangeDeep)
                     .padding(.horizontal, 10)
@@ -95,14 +75,12 @@ struct HomeZoriCard: View {
             }
 
             HStack(spacing: 16) {
-                miniStat(L10n.petHappiness, state?.happiness ?? PetRules.initialStat)
-                miniStat(L10n.petSatiety, state?.satiety ?? PetRules.initialStat)
+                miniStat(L10n.petHappiness, viewModel.happiness)
+                miniStat(L10n.petSatiety, viewModel.satiety)
             }
         }
         .frame(maxWidth: .infinity)
         .financeCard(padding: 16)
-        // Crea el estado de Zori y aplica el decaimiento también al abrir Inicio.
-        .onAppear { appState.petRepository.refreshOnOpen(householdId: householdId) }
     }
 
     private func miniStat(_ label: String, _ value: Double) -> some View {
